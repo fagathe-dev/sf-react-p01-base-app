@@ -13,6 +13,13 @@ final class AuthController extends AbstractController
 {
     public function __construct(private readonly AuthService $service) {}
 
+    #[Route('/login', name: 'login', methods: ['POST'])]
+    public function login(Request $request): JsonResponse
+    {
+        $res = $this->service->login($request);
+        return $this->json($res->data, $res->status, $res->headers, $res->context);
+    }
+
     #[Route('/register', name: 'register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {

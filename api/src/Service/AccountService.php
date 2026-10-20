@@ -40,6 +40,7 @@ final class AccountService
         private readonly SerializerInterface $serializer,
         private readonly UserPasswordHasherInterface $hasher,
         private readonly UploaderService $uploader,
+        private readonly SecretDecoder $secretDecoder,
         private readonly ?string $defaultUri = null,
     ) {}
 
@@ -187,9 +188,14 @@ final class AccountService
             return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $body = $this->secretDecoder->decodeJsonBody($request->getContent(), ['currentPassword', 'newPassword']);
+        if ($body === null) {
+            return $this->sendJson(['message' => 'Format de données invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
             /** @var ChangePasswordDto $dto */
-            $dto = $this->serializer->deserialize($request->getContent(), ChangePasswordDto::class, 'json');
+            $dto = $this->serializer->deserialize($body, ChangePasswordDto::class, 'json');
         } catch (Throwable) {
             return $this->sendJson(['message' => 'Format de données JSON invalide.'], Response::HTTP_BAD_REQUEST);
         }
@@ -269,9 +275,14 @@ final class AccountService
             return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $body = $this->secretDecoder->decodeJsonBody($request->getContent(), ['currentPasscode', 'passcode']);
+        if ($body === null) {
+            return $this->sendJson(['message' => 'Format de données invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
             /** @var SetJournalPasscodeDto $dto */
-            $dto = $this->serializer->deserialize($request->getContent(), SetJournalPasscodeDto::class, 'json');
+            $dto = $this->serializer->deserialize($body, SetJournalPasscodeDto::class, 'json');
         } catch (Throwable) {
             return $this->sendJson(['message' => 'Format de données JSON invalide.'], Response::HTTP_BAD_REQUEST);
         }
@@ -334,9 +345,14 @@ final class AccountService
             return $this->sendJson(['unlocked' => true, 'message' => 'Aucun code configuré.']);
         }
 
+        $body = $this->secretDecoder->decodeJsonBody($request->getContent(), ['passcode']);
+        if ($body === null) {
+            return $this->sendJson(['message' => 'Format de données invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
             /** @var VerifyJournalPasscodeDto $dto */
-            $dto = $this->serializer->deserialize($request->getContent(), VerifyJournalPasscodeDto::class, 'json');
+            $dto = $this->serializer->deserialize($body, VerifyJournalPasscodeDto::class, 'json');
         } catch (Throwable) {
             return $this->sendJson(['message' => 'Format de données JSON invalide.'], Response::HTTP_BAD_REQUEST);
         }

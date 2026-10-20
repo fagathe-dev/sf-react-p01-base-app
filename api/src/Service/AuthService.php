@@ -13,6 +13,7 @@ use Fagathe\CorePhp\Http\RequestTrait;
 use Fagathe\CorePhp\Http\ResponseTrait;
 use Fagathe\CorePhp\Trait\DatetimeTrait;
 use Fagathe\CorePhp\Trait\LoggerTrait;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -32,7 +33,9 @@ final class AuthService
         private readonly SerializerInterface $serializer,
         private readonly UserPasswordHasherInterface $hasher,
         private readonly UserRequestService $userRequestService,
-        private readonly TokenGenerator $tokenGenerator
+        private readonly TokenGenerator $tokenGenerator,
+        private readonly SecretDecoder $secretDecoder,
+        private readonly JWTTokenManagerInterface $jwtManager
     ) {}
 
     /**
@@ -42,10 +45,16 @@ final class AuthService
     {
         $now = $this->now();
 
+        // Le mot de passe arrive en base64 : on le décode AVANT la désérialisation et la validation
+        $body = $this->secretDecoder->decodeJsonBody($request->getContent(), ['password']);
+        if ($body === null) {
+            return $this->sendJson(['message' => 'Format de données invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
         try {
             /** @var User $user */
             $user = $this->serializer->deserialize(
-                $request->getContent(),
+                $body,
                 User::class,
                 'json',
                 [
@@ -117,6 +126,59 @@ final class AuthService
     }
 
     /**
+     * Connexion : le mot de passe est reçu en base64, décodé, puis vérifié contre le hash en base
+     */
+    public function login(Request $request): object
+    {
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            return $this->sendJson(['message' => 'Format de données JSON invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $identifier = trim((string) ($data['username'] ?? ''));
+        $password = $this->secretDecoder->decode($data['password'] ?? '');
+
+        if ($password === null) {
+            return $this->sendJson(['message' => 'Format de données invalide.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($identifier === '' || $password === '') {
+            return $this->sendJson(['message' => 'Identifiant et mot de passe obligatoires.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $user = $this->userRepository->findOneBy(['username' => $identifier])
+            ?? $this->userRepository->findOneBy(['email' => $identifier]);
+
+        if (!$user instanceof User) {
+            // Hash factice pour lisser le temps de réponse (anti-énumération d'utilisateurs)
+            $this->hasher->hashPassword(new User(), $password);
+
+            return $this->sendJson(['message' => 'Identifiants invalides.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // $password est ici le mot de passe DÉCODÉ : c'est lui qui est comparé au hash
+        if (!$this->hasher->isPasswordValid($user, $password)) {
+            return $this->sendJson(['message' => 'Identifiants invalides.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (!$user->isVerified()) {
+            return $this->sendJson(
+                ['message' => 'Veuillez vérifier votre adresse e-mail avant de vous connecter.'],
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        return $this->sendJson(
+            [
+                'token' => $this->jwtManager->create($user),
+                'user'  => $user,
+            ],
+            Response::HTTP_OK,
+            context: ['groups' => ['user.read']]
+        );
+    }
+
+    /**
      * Vérification de l'adresse e-mail par code OTP
      */
     public function verifyOtp(Request $request): object
@@ -183,7 +245,11 @@ final class AuthService
     {
         $data = json_decode($request->getContent(), true) ?? [];
         $token = trim((string) ($data['token'] ?? ''));
-        $password = (string) ($data['password'] ?? '');
+        $password = $this->secretDecoder->decode($data['password'] ?? '');
+
+        if ($password === null) {
+            return $this->sendJson(['message' => 'Format de données invalide.'], Response::HTTP_BAD_REQUEST);
+        }
 
         if (empty($token) || empty($password)) {
             return $this->sendJson(['message' => 'Jeton et nouveau mot de passe obligatoires.'], Response::HTTP_UNPROCESSABLE_ENTITY);
