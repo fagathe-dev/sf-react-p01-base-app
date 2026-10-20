@@ -1,11 +1,10 @@
 import { BaseComponentProps } from '@/ui/types';
 import styled, { css } from 'styled-components';
 
-export type ObjectFit = 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
+type ObjectFit = 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
 export type ImageRadius = 'sm' | 'base' | 'lg' | 'xl' | '2xl' | 'pill' | 'full';
 
-export interface ImageProps
-  extends React.ImgHTMLAttributes<HTMLImageElement>, BaseComponentProps {
+export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement>, BaseComponentProps {
   fluid?: boolean;
   fit?: ObjectFit;
   aspectRatio?: string;
@@ -18,8 +17,7 @@ export const Image = styled.img.attrs<ImageProps>((props) => ({
 }))<ImageProps>`
   display: block;
   max-width: ${({ fluid = true }) => (fluid ? '100%' : 'none')};
-  height: ${({ fluid = true, height }) =>
-    fluid && !height ? 'auto' : undefined};
+  height: ${({ fluid = true, height }) => (fluid && !height ? 'auto' : undefined)};
 
   ${({ fit }) =>
     fit &&

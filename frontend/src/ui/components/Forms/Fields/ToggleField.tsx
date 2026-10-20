@@ -31,7 +31,7 @@ export const ToggleField = forwardRef<HTMLInputElement, ToggleFieldProps>(
       <FieldWrapper>
         <LabelContainer htmlFor={id}>
           <Toggle ref={ref} id={id} {...toggleProps} />
-          <span>{label}</span>
+          {label && <span>{label}</span>}
         </LabelContainer>
         {error && <HelperText state="invalid">{error}</HelperText>}
       </FieldWrapper>

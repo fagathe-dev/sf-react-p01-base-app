@@ -11,8 +11,7 @@ const FieldWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[3]};
 `;
 
-export interface TextFieldProps
-  extends Omit<InputProps, 'id'>, FieldBaseProps {}
+export interface TextFieldProps extends Omit<InputProps, 'id'>, FieldBaseProps {}
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
   ({ label, error, hint, required, id: customId, ...inputProps }, ref) => {
@@ -22,16 +21,12 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
 
     return (
       <FieldWrapper>
-        <Label htmlFor={id} required={required}>
-          {label}
-        </Label>
-        <Input
-          ref={ref}
-          id={id}
-          required={required}
-          validationState={validationState}
-          {...inputProps}
-        />
+        {label && (
+          <Label htmlFor={id} required={required}>
+            {label}
+          </Label>
+        )}
+        <Input ref={ref} id={id} required={required} validationState={validationState} {...inputProps} />
         {error && <HelperText state="invalid">{error}</HelperText>}
         {!error && hint && <HelperText>{hint}</HelperText>}
       </FieldWrapper>

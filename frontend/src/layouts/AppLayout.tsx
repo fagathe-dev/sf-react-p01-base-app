@@ -165,7 +165,7 @@ export const AppLayout: React.FC = () => {
                 src="/images/logo.webp"
                 srcSet="/images/logo.webp"
                 width={32}
-                alt="Logo de l'application To-Do App"
+                alt="Logo de l'application Base App"
               />
             </BrandLink>
           </SidebarHeader>

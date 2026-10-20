@@ -19,7 +19,7 @@ final class HealthCheckController extends AbstractController
         return $this->json([
             'status'    => 'ok',
             'timestamp' => $this->now()->format(DateTimeInterface::ATOM),
-            'service'   => 'todo-api',
+            'service'   => 'base-api',
             'version'   => '1.0.0',
         ], Response::HTTP_OK);
     }

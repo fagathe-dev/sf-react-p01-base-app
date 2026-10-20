@@ -11,26 +11,21 @@ const FieldWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[3]};
 `;
 
-export interface TextareaFieldProps
-  extends Omit<TextareaProps, 'id'>, FieldBaseProps {}
+export interface TextareaFieldProps extends Omit<TextareaProps, 'id'>, FieldBaseProps {}
 
-export const TextareaField = forwardRef<
-  HTMLTextAreaElement,
-  TextareaFieldProps
->(
-  (
-    { label, error, hint, required, id: customId, rows = 3, ...textareaProps },
-    ref
-  ) => {
+export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>(
+  ({ label, error, hint, required, id: customId, rows = 3, ...textareaProps }, ref) => {
     const generatedId = useId();
     const id = customId || generatedId;
     const validationState = error ? 'invalid' : textareaProps.validationState;
 
     return (
       <FieldWrapper>
-        <Label htmlFor={id} required={required}>
-          {label}
-        </Label>
+        {label && (
+          <Label htmlFor={id} required={required}>
+            {label}
+          </Label>
+        )}
         <Textarea
           ref={ref}
           id={id}

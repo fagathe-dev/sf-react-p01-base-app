@@ -18,10 +18,7 @@ const FieldWrapper = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing[2]};
 `;
 
-export interface CheckFieldProps extends Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  'type'
-> {
+export interface CheckFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: string;
   type?: 'checkbox' | 'radio';
   error?: string;
@@ -37,7 +34,7 @@ export const CheckField = forwardRef<HTMLInputElement, CheckFieldProps>(
       <FieldWrapper>
         <LabelContainer htmlFor={id}>
           <InputComponent ref={ref} id={id} {...inputProps} />
-          <span>{label}</span>
+          {label && <span>{label}</span>}
         </LabelContainer>
         {error && <HelperText state="invalid">{error}</HelperText>}
       </FieldWrapper>

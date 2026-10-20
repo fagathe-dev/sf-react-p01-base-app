@@ -57,7 +57,7 @@ export const AuthLayout = () => {
           color={theme.colors.primary.base}
         />
         <Text weight="bold" size="xl" color='secondary'>
-          To-Do App
+          Base App
         </Text>
       </BrandHeader>
 

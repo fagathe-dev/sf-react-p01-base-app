@@ -1,49 +1,39 @@
-import { BaseComponentProps } from '@/ui/types';
+// frontend/src/ui/components/Feedback/Toast/ToastContainer.tsx
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
+import { Toast } from './Toast';
+import { useToastStore } from './useToast';
 
-export type ToastPosition =
-  | 'top-right'
-  | 'top-left'
-  | 'bottom-right'
-  | 'bottom-left';
-
-export interface ToastContainerProps extends BaseComponentProps {
-  position?: ToastPosition;
-}
-
-const positionStyles = {
-  'top-right': 'top: 1.5rem; right: 1.5rem;',
-  'top-left': 'top: 1.5rem; left: 1.5rem;',
-  'bottom-right': 'bottom: 1.5rem; right: 1.5rem;',
-  'bottom-left': 'bottom: 1.5rem; left: 1.5rem;',
-};
-
-const Wrapper = styled.div<{ $position: ToastPosition }>`
+const Viewport = styled.div`
   position: fixed;
-  ${({ $position }) => positionStyles[$position]}
-  z-index: 1100;
+  bottom: ${({ theme }) => theme.spacing[4]};
+  right: ${({ theme }) => theme.spacing[4]};
+  z-index: 2000;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing[2]};
+  gap: ${({ theme }) => theme.spacing[2.5]};
   pointer-events: none;
-
-  & > * {
-    pointer-events: auto;
-  }
 `;
 
-export const ToastContainer = ({
-  position = 'bottom-right',
-  children,
-  ...rest
-}: ToastContainerProps) => {
-  if (typeof document === 'undefined') return null;
+export const ToastContainer = () => {
+  const toasts = useToastStore((state) => state.toasts);
+  const removeToast = useToastStore((state) => state.removeToast);
+
+  if (toasts.length === 0 || typeof document === 'undefined') return null;
 
   return createPortal(
-    <Wrapper $position={position} {...rest}>
-      {children}
-    </Wrapper>,
+    <Viewport aria-live="polite">
+      {toasts.map((t) => (
+        <Toast
+          key={t.id}
+          variant={t.variant}
+          title={t.title}
+          onClose={() => removeToast(t.id)}
+        >
+          {t.message}
+        </Toast>
+      ))}
+    </Viewport>,
     document.body
   );
 };

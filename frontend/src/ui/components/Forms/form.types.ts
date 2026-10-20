@@ -5,7 +5,7 @@ export interface FormElementBaseProps {
 }
 
 export interface FieldBaseProps {
-  label: string;
+  label?: string;
   error?: string;
   hint?: string;
   required?: boolean;
