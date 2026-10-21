@@ -140,6 +140,7 @@ final class NoteService
             return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
         }
 
+
         $data = $request->request->all();
         if (empty($data)) {
             $data = json_decode($request->getContent(), true) ?? [];
@@ -151,7 +152,7 @@ final class NoteService
         $dto->color = $data['color'] ?? null;
         $dto->state = $data['state'] ?? null;
         $dto->tag = $data['tag'] ?? null;
-
+        
         $violations = $this->validator->validate($dto);
         if (count($violations) > 0) {
             return $this->sendViolations($violations);
@@ -176,8 +177,8 @@ final class NoteService
             }
         }
 
-        if (array_key_exists('isPinned', $data)) {
-            $note->setIsPinned(filter_var($data['isPinned'], FILTER_VALIDATE_BOOLEAN));
+        if (array_key_exists('is_pinned', $data)) {
+            $note->setIsPinned(filter_var($data['is_pinned'], FILTER_VALIDATE_BOOLEAN));
         }
 
         $files = $this->extractUploadedFiles($request);
