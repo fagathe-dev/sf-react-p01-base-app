@@ -32,10 +32,12 @@ const Popup = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.md};
   z-index: 20;
   padding: 8px;
+  max-width: calc(100vw - 32px);
 `;
 
 const PaletteGrid = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(7, 20px);
   gap: 6px;
   align-items: center;
 `;
