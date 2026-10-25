@@ -108,6 +108,30 @@ export const JournalMoodModal: React.FC<JournalMoodModalProps> = ({ selected, on
           );
         })}
       </EmojiGrid>
+
+      {selected && (
+        <button
+          type="button"
+          onClick={() => {
+            onSelect(null);
+            onClose();
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer',
+            padding: 4,
+            color: 'inherit',
+          }}
+        >
+          <Icon name="close-circle-outline" size={16} />
+          Retirer l'humeur
+        </button>
+      )}
     </ModalBox>
   </Backdrop>
 );

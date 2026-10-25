@@ -5,6 +5,7 @@ namespace App\Dto\Journal;
 use App\Enum\ColorEnum;
 use App\Enum\MoodEnum;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Constraints\AllValidator;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 final class CreateJournalDto

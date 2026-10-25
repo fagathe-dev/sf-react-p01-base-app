@@ -47,6 +47,9 @@
             "./migrations/.gitignore"
         ]
     },
+    "fagathe-dev/core-php": {
+        "version": "v1.0.19"
+    },
     "knplabs/knp-paginator-bundle": {
         "version": "v6.11.0"
     },

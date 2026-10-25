@@ -160,9 +160,10 @@ final class JournalService
         $dto = new UpdateJournalDto();
         $dto->title = $data['title'] ?? null;
         $dto->content = $data['content'] ?? null;
-        $dto->color = $data['color'] ?? null;
-        $dto->mood = $data['mood'] ?? null;
-        $dto->tag = $data['tag'] ?? null;
+        // En multipart, une valeur null est envoyée sous forme de chaîne vide
+        $dto->color = ($data['color'] ?? null) ?: null;
+        $dto->mood = ($data['mood'] ?? null) ?: null;
+        $dto->tag = ($data['tag'] ?? null) ?: null;
         $dto->isPinned = isset($data['isPinned']) ? filter_var($data['isPinned'], FILTER_VALIDATE_BOOLEAN) : null;
 
         $violations = $this->validator->validate($dto);
