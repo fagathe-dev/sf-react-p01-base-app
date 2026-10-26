@@ -125,7 +125,7 @@ final class NoteService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur création note', 'user' => $user->getUserIdentifier(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur création note', 'user' => $user->getUserIdentifier(), 'exception' => $e],
                 ['action' => 'note.create.critical_error']
             );
 
@@ -197,7 +197,7 @@ final class NoteService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur mise à jour note', 'note_id' => (string) $note->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur mise à jour note', 'note_id' => (string) $note->getId(), 'exception' => $e],
                 ['action' => 'note.update.critical_error']
             );
 
@@ -220,7 +220,7 @@ final class NoteService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur restauration note', 'note_id' => (string) $note->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur restauration note', 'note_id' => (string) $note->getId(), 'exception' => $e],
                 ['action' => 'note.restore.critical_error']
             );
 
@@ -244,7 +244,7 @@ final class NoteService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur suppression note', 'note_id' => (string) $note->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur suppression note', 'note_id' => (string) $note->getId(), 'exception' => $e],
                 ['action' => 'note.delete.critical_error']
             );
 
@@ -339,9 +339,9 @@ final class NoteService
             $this->generateLog(
                 LoggerLevelEnum::Critical,
                 [
-                    'message' => 'Erreur critique lors du vidage de la corbeille',
-                    'user_id' => (string) $user->getId(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Erreur critique lors du vidage de la corbeille',
+                    'user_id'   => (string) $user->getId(),
+                    'exception' => $e,
                 ],
                 ['action' => 'note.empty_trash.critical_error']
             );

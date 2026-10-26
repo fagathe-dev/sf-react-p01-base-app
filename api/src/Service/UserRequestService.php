@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Fagathe\CorePhp\Enum\LoggerLevelEnum;
 use Fagathe\CorePhp\Trait\DatetimeTrait;
 use Fagathe\CorePhp\Trait\LoggerTrait;
+use Symfony\Bundle\SecurityBundle\Security;
 use Throwable;
 
 final class UserRequestService
@@ -18,23 +19,26 @@ final class UserRequestService
 
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly UserRequestRepository $repository
+        private readonly UserRequestRepository $repository,
+        private readonly Security $security,
     ) {}
 
     /**
      * Crée une nouvelle demande (OTP à 6 chiffres ou token sécurisé de 64 caractères).
      *
      * @param array<string, mixed>|null $payload
+     * @param int|null                  $ttlSeconds Durée de validité en secondes (prioritaire sur $ttlMinutes)
      */
     public function createRequest(
         User $user,
         UserRequestTypeEnum $type,
         int $ttlMinutes = 15,
         bool $isOtp = true,
-        ?array $payload = null
+        ?array $payload = null,
+        ?int $ttlSeconds = null,
     ): ?UserRequest {
         $now = $this->now();
-        $expiresAt = $this->modifyDateTime(sprintf('+%d minutes', $ttlMinutes), $now);
+        $expiresAt = $this->modifyDateTime(sprintf('+%d seconds', $ttlSeconds ?? $ttlMinutes * 60), $now);
 
         // Invalidation préalable de toute demande active du même type
         $this->invalidateActiveRequests($user, $type);
@@ -74,9 +78,9 @@ final class UserRequestService
             $this->generateLog(
                 LoggerLevelEnum::Critical,
                 [
-                    'message' => 'Échec lors de la création de la UserRequest',
-                    'user_id' => (string) $user->getId(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Échec lors de la création de la UserRequest',
+                    'user_id'   => (string) $user->getId(),
+                    'exception' => $e,
                 ],
                 ['action' => 'user_request.create.error']
             );
@@ -112,6 +116,46 @@ final class UserRequestService
         }
 
         return $userRequest;
+    }
+
+    /**
+     * Vérifie un code / jeton parmi les demandes d'un utilisateur donné uniquement.
+     * Indispensable pour les codes à 6 chiffres, qui ne sont pas uniques entre utilisateurs.
+     */
+    public function findValidRequestForUser(User $user, string $identifier, UserRequestTypeEnum $type): ?UserRequest
+    {
+        /** @var UserRequest|null $userRequest */
+        $userRequest = $this->repository->findOneBy([
+            'user'   => $user,
+            'code'   => $identifier,
+            'type'   => $type,
+            'isUsed' => false,
+        ]) ?? $this->repository->findOneBy([
+            'user'   => $user,
+            'token'  => $identifier,
+            'type'   => $type,
+            'isUsed' => false,
+        ]);
+
+        if (!$userRequest) {
+            return null;
+        }
+
+        if ($this->isPastDate($userRequest->getExpiresAt())) {
+            $this->consume($userRequest);
+            return null;
+        }
+
+        return $userRequest;
+    }
+
+    /**
+     * Révoque toutes les demandes actives d'un type (ex: trop de tentatives sur un code).
+     */
+    public function revokeActiveRequests(User $user, UserRequestTypeEnum $type): void
+    {
+        $this->invalidateActiveRequests($user, $type);
+        $this->em->flush();
     }
 
     /**

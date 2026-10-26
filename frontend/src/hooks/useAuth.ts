@@ -1,12 +1,14 @@
 import { useAuthStore } from '@/stores/auth.store';
 import { RoleEnum, User } from '@/types/auth.types';
 import { isTokenValid } from '@/utils/jwt';
+import { getPrimaryRole, getRoleLabel } from '@/utils/role';
 
 export interface UseAuthReturn {
   isAuth: boolean;
   user: User | null;
   role?: Array<RoleEnum>;
   isAdmin: boolean;
+  roleLabel: string;
   isLoading: boolean;
   token: string | null;
   logout: () => void;
@@ -18,13 +20,15 @@ export const useAuth = (): UseAuthReturn => {
   const isTokenActive = isTokenValid(token);
   const isAuth = Boolean(token && isTokenActive && user);
   const role = user?.roles;
-  const isAdmin = role !== undefined ? role.includes('ROLE_ADMIN') : false;
+  const isAdmin = getPrimaryRole(role) === 'ROLE_ADMIN';
+  const roleLabel = getRoleLabel(role);
 
   return {
     isAuth,
     user,
     role,
     isAdmin,
+    roleLabel,
     isLoading,
     token,
     logout,

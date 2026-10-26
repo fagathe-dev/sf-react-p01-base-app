@@ -1,15 +1,6 @@
 import { CreateNotePayload, Note, UpdateNotePayload } from '@/types/note.types';
+import { toApiError } from './apiError';
 import { fetchAPI } from './fetchAPI';
-
-const extractError = (data: unknown, fallback: string): string => {
-  if (!data || typeof data !== 'object') return fallback;
-  const d = data as Record<string, any>;
-  if (d.message) return d.message;
-  if (Array.isArray(d.violations) && d.violations.length > 0) {
-    return d.violations.map((v: any) => v.message).join(' — ');
-  }
-  return fallback;
-};
 
 export const fetchNotes = async (
   filter?: 'open' | 'archived' | 'trash'
@@ -17,24 +8,20 @@ export const fetchNotes = async (
   const query = filter ? `?filter=${filter}` : '';
   const res = await fetchAPI<Note[]>(`/notes${query}`);
   if (!res.ok)
-    throw new Error(
-      extractError(res.data, 'Erreur lors du chargement des notes.')
-    );
+    throw toApiError(res, 'Erreur lors du chargement des notes.');
   return res.data ?? [];
 };
 
 export const fetchNoteById = async (id: string): Promise<Note> => {
   const res = await fetchAPI<Note>(`/notes/${id}`);
-  if (!res.ok) throw new Error(extractError(res.data, 'Note introuvable.'));
+  if (!res.ok) throw toApiError(res, 'Note introuvable.');
   return res.data;
 };
 
 export const createNote = async (payload: CreateNotePayload): Promise<Note> => {
   const res = await fetchAPI<Note>('/notes', { method: 'POST', body: payload });
   if (!res.ok)
-    throw new Error(
-      extractError(res.data, 'Erreur lors de la création de la note.')
-    );
+    throw toApiError(res, 'Erreur lors de la création de la note.');
   return res.data;
 };
 
@@ -47,18 +34,14 @@ export const updateNote = async (
     body: payload,
   });
   if (!res.ok)
-    throw new Error(
-      extractError(res.data, 'Erreur lors de la modification de la note.')
-    );
+    throw toApiError(res, 'Erreur lors de la modification de la note.');
   return res.data;
 };
 
 export const restoreNote = async (id: string): Promise<Note> => {
   const res = await fetchAPI<Note>(`/notes/${id}/restore`, { method: 'POST' });
   if (!res.ok)
-    throw new Error(
-      extractError(res.data, 'Erreur lors de la restauration de la note.')
-    );
+    throw toApiError(res, 'Erreur lors de la restauration de la note.');
   return res.data;
 };
 
@@ -71,9 +54,7 @@ export const deleteNote = async (
     { method: 'DELETE' }
   );
   if (!res.ok)
-    throw new Error(
-      extractError(res.data, 'Erreur lors de la suppression de la note.')
-    );
+    throw toApiError(res, 'Erreur lors de la suppression de la note.');
 };
 
 export const deleteNoteFile = async (
@@ -84,9 +65,7 @@ export const deleteNoteFile = async (
     method: 'DELETE',
   });
   if (!res.ok)
-    throw new Error(
-      extractError(res.data, 'Erreur lors de la suppression du fichier.')
-    );
+    throw toApiError(res, 'Erreur lors de la suppression du fichier.');
 };
 
 export const emptyTrash = async (): Promise<void> => {
@@ -94,8 +73,6 @@ export const emptyTrash = async (): Promise<void> => {
     method: 'DELETE',
   });
   if (!res.ok) {
-    throw new Error(
-      extractError(res.data, 'Erreur lors du vidage de la corbeille.')
-    );
+    throw toApiError(res, 'Erreur lors du vidage de la corbeille.');
   }
 };

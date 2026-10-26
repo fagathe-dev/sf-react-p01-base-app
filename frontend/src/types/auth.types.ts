@@ -28,6 +28,31 @@ export interface LoginPayload {
 export interface AuthResponse {
   token: string;
   user: User;
+  message?: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
+export interface LoginCodeRequestResponse extends MessageResponse {
+  /** Validité du code, en secondes */
+  expiresIn: number;
+  /** Délai avant de pouvoir redemander un code, en secondes */
+  resendAvailable: number;
+}
+
+/** Réponse de POST /account/delete-request (même forme que la demande de code de connexion) */
+export type AccountDeletionRequestResponse = LoginCodeRequestResponse;
+
+export interface LoginCodePayload {
+  username: string;
+  code: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
 }
 
 export interface RegisterResponse {
@@ -43,6 +68,11 @@ export interface UpdateProfilePayload {
 
 export interface ChangeEmailPayload {
   email: string;
+}
+
+export interface ConfirmEmailChangeResponse {
+  user: User;
+  message: string;
 }
 
 export interface ChangePasswordPayload {

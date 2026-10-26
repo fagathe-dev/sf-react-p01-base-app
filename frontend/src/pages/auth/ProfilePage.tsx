@@ -1,12 +1,11 @@
-import { deleteAccount } from '@/services/auth.api';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button } from '@/ui/components/Base/Button';
+import { Badge } from '@/ui/components/Base/Badge';
 import { Icon } from '@/ui/components/Base/Icon';
 import { TabContent, TabList, Tabs, TabTrigger } from '@/ui/components/Navigation/Tabs';
 import { Text } from '@/ui/components/Typo/Text';
 import { Title } from '@/ui/components/Typo/Title';
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import styled from 'styled-components';
 import {
   ChangeAvatarForm,
@@ -14,6 +13,7 @@ import {
   ChangeInformationsForm,
   ChangeJournalPasscodeForm,
   ChangePasswordForm,
+  DeleteAccountCard,
 } from './components';
 
 const PageContainer = styled.div`
@@ -35,50 +35,26 @@ const ProfileBanner = styled.div`
   flex-wrap: wrap;
 `;
 
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
 const Stack = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
 
-const DangerCard = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
-  border: 1px solid #fecaca;
-  background-color: #fef2f2;
-  border-radius: ${({ theme }) => theme.radii.base};
-  max-width: 640px;
-  flex-wrap: wrap;
-`;
-
 export const ProfilePage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-  const navigate = useNavigate();
-  const [deleting, setDeleting] = useState(false);
+  const { isAdmin, roleLabel } = useAuth();
 
   if (!user) return null;
 
   const fullName = [user.firstname, user.lastname].filter(Boolean).join(' ');
-
-  const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      'Attention : la suppression de votre compte est définitive. Toutes vos notes, tâches, entrées de journal et fichiers seront supprimés. Continuer ?'
-    );
-    if (!confirmed) return;
-
-    try {
-      setDeleting(true);
-      await deleteAccount();
-      logout();
-      navigate('/login');
-    } finally {
-      setDeleting(false);
-    }
-  };
 
   return (
     <PageContainer>
@@ -87,9 +63,14 @@ export const ProfilePage: React.FC = () => {
       <ProfileBanner>
         <ChangeAvatarForm />
         <div>
-          <Title as="h3" style={{ margin: 0 }}>
-            {fullName || user.username}
-          </Title>
+          <TitleRow>
+            <Title as="h3" style={{ margin: 0 }}>
+              {fullName || user.username}
+            </Title>
+            <Badge variant={isAdmin ? 'primary' : 'neutral'} pill>
+              {roleLabel}
+            </Badge>
+          </TitleRow>
           <Text size="sm" color="muted">
             @{user.username} • {user.email}
           </Text>
@@ -127,26 +108,7 @@ export const ProfilePage: React.FC = () => {
         </TabContent>
 
         <TabContent value="danger">
-          <DangerCard>
-            <div style={{ maxWidth: 420 }}>
-              <Title as="h4" style={{ margin: 0, color: '#991b1b' }}>
-                Supprimer définitivement le compte
-              </Title>
-              <Text size="xs" style={{ color: '#b91c1c', marginTop: 4 }}>
-                Cette action est irréversible et supprimera toutes vos données ainsi que vos fichiers stockés sur le
-                serveur.
-              </Text>
-            </div>
-
-            <Button
-              type="button"
-              loading={deleting}
-              onClick={handleDeleteAccount}
-              style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none' }}
-            >
-              Supprimer mon compte
-            </Button>
-          </DangerCard>
+          <DeleteAccountCard />
         </TabContent>
       </Tabs>
     </PageContainer>

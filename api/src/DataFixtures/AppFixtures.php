@@ -48,6 +48,14 @@ class AppFixtures extends Fixture
                     ->setLastname('User')
                     ->setJournalPasscode($defaultPasscode)
                     ->setCreatedAt(new \DateTimeImmutable());
+            } elseif ($i === 1) {
+                // Administrateur fixe (accès à la prévisualisation des e-mails)
+                $user
+                    ->setEmail('admin@example.com')
+                    ->setUsername('admin')
+                    ->setFirstname('Admin')
+                    ->setLastname('User')
+                    ->setCreatedAt(new \DateTimeImmutable());
             } else {
                 $user
                     ->setEmail($faker->unique()->safeEmail())
@@ -58,7 +66,7 @@ class AppFixtures extends Fixture
             }
 
             $user
-                ->setRoles([RoleEnum::RoleUser->value])
+                ->setRoles([$i === 1 ? RoleEnum::RoleAdmin->value : RoleEnum::RoleUser->value])
                 ->setPassword($this->hasher->hashPassword($user, $defaultPassword))
                 ->setJournalPasscode($defaultPasscode)
                 ->setIsVerified(true)

@@ -4,7 +4,7 @@ import { Button } from '@/ui/components/Base/Button';
 import { Loading } from '@/ui/components/Feedback/Loading';
 import { Text } from '@/ui/components/Typo/Text';
 import { Title } from '@/ui/components/Typo/Title';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { TagForm, TagList } from './components';
 
@@ -46,6 +46,19 @@ export const TagsPage = () => {
     loadTags();
   }, []);
 
+  // Référence stable : TagForm réinitialise ses champs à chaque changement de initialData
+  const formInitialData = useMemo<CreateTagPayload | null>(
+    () =>
+      editingTag
+        ? {
+            name: editingTag.name,
+            description: editingTag.description,
+            color: editingTag.color || 'blue',
+          }
+        : null,
+    [editingTag]
+  );
+
   const handleCancelForm = () => {
     setIsCreating(false);
     setEditingTag(null);
@@ -61,8 +74,6 @@ export const TagsPage = () => {
       }
       await loadTags();
       handleCancelForm();
-    } catch (err) {
-      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -98,15 +109,7 @@ export const TagsPage = () => {
       {/* Formulaire visible si on crée ou on édite */}
       {(isCreating || editingTag) && (
         <TagForm
-          initialData={
-            editingTag
-              ? {
-                  name: editingTag.name,
-                  description: editingTag.description,
-                  color: editingTag.color || 'blue',
-                }
-              : null
-          }
+          initialData={formInitialData}
           onSubmit={handleSubmit}
           onCancel={handleCancelForm}
           isSubmitting={isSubmitting}

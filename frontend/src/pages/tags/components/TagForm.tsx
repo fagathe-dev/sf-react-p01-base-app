@@ -1,5 +1,7 @@
+import { ApiViolations, getErrorMessage, getFieldErrors } from '@/services/apiError';
 import { ColorEnum, CreateTagPayload, tagColors } from '@/types/tag.types';
 import { Button } from '@/ui/components/Base/Button';
+import { Alert } from '@/ui/components/Feedback/Alert';
 import { TextField } from '@/ui/components/Forms/Fields/TextField';
 import { Text } from '@/ui/components/Typo/Text';
 import React, { useEffect, useState } from 'react';
@@ -52,7 +54,7 @@ const ColorSwatch = styled.button<{ $bg: string; $selected: boolean }>`
 
 interface TagFormProps {
   initialData?: CreateTagPayload | null;
-  onSubmit: (data: CreateTagPayload) => void;
+  onSubmit: (data: CreateTagPayload) => Promise<void>;
   onCancel: () => void;
   isSubmitting?: boolean;
 }
@@ -66,6 +68,8 @@ export const TagForm: React.FC<TagFormProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState<ColorEnum>('blue');
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ApiViolations>({});
 
   useEffect(() => {
     if (initialData) {
@@ -75,18 +79,35 @@ export const TagForm: React.FC<TagFormProps> = ({
     }
   }, [initialData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSubmit({
-      name: name.trim(),
-      description: description.trim() || null,
-      color,
-    });
+    setSubmitError(null);
+    setFieldErrors({});
+    try {
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim() || null,
+        color,
+      });
+    } catch (err) {
+      const violations = getFieldErrors(err);
+      setFieldErrors(violations);
+      // Message global uniquement si aucune erreur n'est rattachée à un champ du formulaire
+      if (!violations.name && !violations.description && !violations.color) {
+        setSubmitError(getErrorMessage(err, 'Erreur lors de l’enregistrement du tag.'));
+      }
+    }
   };
 
   return (
     <FormBox onSubmit={handleSubmit}>
+      {submitError && (
+        <Alert variant="danger" onClose={() => setSubmitError(null)}>
+          {submitError}
+        </Alert>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <Text size="xs" weight="medium" color="muted">
           Aperçu :
@@ -100,6 +121,7 @@ export const TagForm: React.FC<TagFormProps> = ({
           placeholder="ex : Urgence, Maison…"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          error={fieldErrors.name}
           required
         />
         <TextField
@@ -107,6 +129,7 @@ export const TagForm: React.FC<TagFormProps> = ({
           placeholder="Utilité de ce tag (facultatif)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          error={fieldErrors.description}
         />
       </FormGrid>
 
@@ -126,6 +149,11 @@ export const TagForm: React.FC<TagFormProps> = ({
             />
           ))}
         </ColorPalette>
+        {fieldErrors.color && (
+          <Text size="xs" color="danger" style={{ marginTop: 6 }}>
+            {fieldErrors.color}
+          </Text>
+        )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

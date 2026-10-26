@@ -135,7 +135,7 @@ final class AttachmentFileService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Error,
-                ['message' => 'Erreur lors de la suppression du fichier', 'file_id' => (string) $file->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur lors de la suppression du fichier', 'file_id' => (string) $file->getId(), 'exception' => $e],
                 ['action' => 'attachment.delete.error']
             );
 

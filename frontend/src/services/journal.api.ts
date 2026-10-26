@@ -6,6 +6,7 @@ import {
   UnlockJournalResponse,
   UpdateEntryPayload,
 } from '@/types/journal.types';
+import { toApiError } from './apiError';
 import { fetchAPI } from './fetchAPI';
 import { sessionAppStorage } from './storage.service';
 
@@ -23,13 +24,6 @@ const handleUnauthorized = (status: number) => {
   }
 };
 
-const extractErr = (data: unknown, fallback: string): string => {
-  if (data && typeof data === 'object' && 'message' in data) {
-    return String((data as { message: unknown }).message);
-  }
-  return fallback;
-};
-
 /**
  * 1. Envoi du code secret vers l'API
  * 2. Réception du jCodeToken
@@ -43,7 +37,7 @@ export const unlockJournal = async (passcode: string): Promise<string> => {
   });
 
   if (!res.ok) {
-    throw new Error(extractErr(res.data, 'Code secret incorrect.'));
+    throw toApiError(res, 'Code secret incorrect.');
   }
 
   const token = res.data.jCodeToken;
@@ -59,7 +53,7 @@ export const fetchEntries = async (): Promise<Entry[]> => {
 
   handleUnauthorized(res.status);
   if (!res.ok) {
-    throw new Error(extractErr(res.data, 'Impossible de charger le journal.'));
+    throw toApiError(res, 'Impossible de charger le journal.');
   }
 
   return res.data ?? [];
@@ -72,7 +66,7 @@ export const fetchEntryById = async (id: string): Promise<Entry> => {
 
   handleUnauthorized(res.status);
   if (!res.ok) {
-    throw new Error(extractErr(res.data, 'Entrée introuvable.'));
+    throw toApiError(res, 'Entrée introuvable.');
   }
 
   return res.data;
@@ -87,7 +81,7 @@ export const createEntry = async (payload: CreateEntryPayload): Promise<Entry> =
 
   handleUnauthorized(res.status);
   if (!res.ok) {
-    throw new Error(extractErr(res.data, 'Erreur lors de la création de l’entrée.'));
+    throw toApiError(res, 'Erreur lors de la création de l’entrée.');
   }
 
   return res.data;
@@ -133,7 +127,7 @@ export const updateEntry = async (id: string, payload: UpdateEntryPayload): Prom
 
   handleUnauthorized(res.status);
   if (!res.ok) {
-    throw new Error(extractErr(res.data, 'Erreur lors de la mise à jour de l’entrée.'));
+    throw toApiError(res, 'Erreur lors de la mise à jour de l’entrée.');
   }
 
   return res.data;
@@ -147,6 +141,6 @@ export const deleteEntry = async (id: string): Promise<void> => {
 
   handleUnauthorized(res.status);
   if (!res.ok) {
-    throw new Error(extractErr(res.data, 'Erreur lors de la suppression de l’entrée.'));
+    throw toApiError(res, 'Erreur lors de la suppression de l’entrée.');
   }
 };

@@ -1,5 +1,6 @@
+import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/auth.store';
-import { Avatar, Icon } from '@/ui/components/Base';
+import { Avatar, Badge, Icon } from '@/ui/components/Base';
 import { Image } from '@/ui/components/Embed';
 import { Container } from '@/ui/components/Grid';
 import {
@@ -130,6 +131,19 @@ const UserMeta = styled.div`
   min-width: 0;
 `;
 
+const RoleBadge = styled(Badge)`
+  align-self: flex-start;
+  margin-top: ${({ theme }) => theme.spacing[1]};
+`;
+
+const AccountSummary = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing[3]};
+  padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
+`;
+
 // ---------------------------------------------------------------------------
 // Configuration des menus de la Sidebar
 // ---------------------------------------------------------------------------
@@ -152,12 +166,18 @@ const ARCHIVE_MODULES: NavModule[] = [
   { label: 'Corbeille', path: '/trash', icon: 'trash-can-outline' },
 ];
 
+const ADMIN_MODULES: NavModule[] = [
+  { label: 'E-mails', path: '/admin/emails', icon: 'email-outline' },
+  { label: 'Logs', path: '/admin/logs', icon: 'text-box-search-outline' },
+];
+
 // ---------------------------------------------------------------------------
 // Composant AppLayout
 // ---------------------------------------------------------------------------
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuthStore();
+  const { isAdmin, roleLabel } = useAuth();
   const location = useLocation();
 
   const isCurrentPath = (path: string) =>
@@ -217,6 +237,28 @@ export const AppLayout: React.FC = () => {
                 </SidebarItem>
               );
             })}
+
+            {isAdmin && (
+              <>
+                <SidebarSection>Administration</SidebarSection>
+                {ADMIN_MODULES.map(({ label, path, icon }) => {
+                  const active = isCurrentPath(path);
+                  return (
+                    <SidebarItem key={path}>
+                      <SidebarLink
+                        as={Link}
+                        to={path}
+                        active={active}
+                        icon={<Icon name={icon} size={18} />}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        {label}
+                      </SidebarLink>
+                    </SidebarItem>
+                  );
+                })}
+              </>
+            )}
           </SidebarNav>
 
           <SidebarFooter>
@@ -229,6 +271,9 @@ export const AppLayout: React.FC = () => {
                 <Text size="xs" color="muted">
                   {user?.email ?? ''}
                 </Text>
+                <RoleBadge variant={isAdmin ? 'primary' : 'neutral'} pill>
+                  {roleLabel}
+                </RoleBadge>
               </UserMeta>
             </UserProfilePreview>
           </SidebarFooter>
@@ -262,6 +307,22 @@ export const AppLayout: React.FC = () => {
                 </AvatarToggle>
 
                 <AccountMenu align="right">
+                  <AccountSummary>
+                    <UserMeta>
+                      <Text weight="semibold" size="sm">
+                        {user?.username ?? 'Utilisateur'}
+                      </Text>
+                      <Text size="xs" color="muted">
+                        {user?.email ?? ''}
+                      </Text>
+                    </UserMeta>
+                    <Badge variant={isAdmin ? 'primary' : 'neutral'} pill>
+                      {roleLabel}
+                    </Badge>
+                  </AccountSummary>
+
+                  <NavbarDropdownDivider />
+
                   <NavbarDropdownItem as={Link} to="/profile">
                     <MenuActionContent>
                       <span>Mon profil</span>

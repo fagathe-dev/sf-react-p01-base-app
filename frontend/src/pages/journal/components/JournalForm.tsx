@@ -1,8 +1,10 @@
+import { getErrorMessage } from '@/services/apiError';
 import { fetchTags } from '@/services/tag.api';
 import { Entry, EntryLocation, EntryMedia, MOOD_META, MoodEnum, UpdateEntryPayload } from '@/types/journal.types';
 import { ColorEnum, Tag } from '@/types/tag.types';
 import { Button } from '@/ui/components/Base/Button';
 import { Icon } from '@/ui/components/Base/Icon';
+import { Alert } from '@/ui/components/Feedback/Alert';
 import { TabContent, TabList, Tabs, TabTrigger } from '@/ui/components/Navigation';
 import { convertMarkdownToHtml } from 'core-ts';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -43,6 +45,7 @@ export const JournalForm: React.FC<JournalFormProps> = ({
   const [mediaErrors, setMediaErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [activePicker, setActivePicker] = useState<'palette' | 'tag' | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -79,16 +82,21 @@ export const JournalForm: React.FC<JournalFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit({
-      title: title.trim() || null,
-      content: content.trim() || null,
-      mood,
-      color,
-      tag: tagId,
-      location,
-      isPinned,
-      ...(isEdit ? { medias: pendingFiles, deletedMedias } : {}),
-    });
+    setSubmitError(null);
+    try {
+      await onSubmit({
+        title: title.trim() || null,
+        content: content.trim() || null,
+        mood,
+        color,
+        tag: tagId,
+        location,
+        isPinned,
+        ...(isEdit ? { medias: pendingFiles, deletedMedias } : {}),
+      });
+    } catch (err) {
+      setSubmitError(getErrorMessage(err, 'Erreur lors de l’enregistrement de l’entrée.'));
+    }
   };
 
   const currentMoodMeta = mood ? MOOD_META[mood] : null;
@@ -162,6 +170,14 @@ export const JournalForm: React.FC<JournalFormProps> = ({
             onTriggerInput={() => fileInputRef.current?.click()}
           />
         </>
+      )}
+
+      {submitError && (
+        <S.FormError>
+          <Alert variant="danger" onClose={() => setSubmitError(null)}>
+            {submitError}
+          </Alert>
+        </S.FormError>
       )}
 
       <S.Toolbar>

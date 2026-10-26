@@ -137,7 +137,7 @@ final class JournalService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur création entrée journal', 'user' => $user->getUserIdentifier(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur création entrée journal', 'user' => $user->getUserIdentifier(), 'exception' => $e],
                 ['action' => 'journal.create.critical_error']
             );
 
@@ -239,7 +239,7 @@ final class JournalService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur modification entrée journal', 'id' => (string) $entry->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur modification entrée journal', 'id' => (string) $entry->getId(), 'exception' => $e],
                 ['action' => 'journal.update.critical_error']
             );
 
@@ -268,7 +268,7 @@ final class JournalService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur suppression définitive journal', 'id' => (string) $entry->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur suppression définitive journal', 'id' => (string) $entry->getId(), 'exception' => $e],
                 ['action' => 'journal.delete.critical_error']
             );
 

@@ -1,8 +1,10 @@
 // src/pages/notes/components/NoteModal.tsx
+import { getErrorMessage } from '@/services/apiError';
 import { fetchTags } from '@/services/tag.api';
 import { CreateNotePayload, Note } from '@/types/note.types';
 import { ColorEnum, Tag } from '@/types/tag.types';
 import { Icon } from '@/ui/components/Base/Icon';
+import { Alert } from '@/ui/components/Feedback/Alert';
 import { TabContent, TabList, Tabs, TabTrigger } from '@/ui/components/Navigation/Tabs';
 import { convertMarkdownToHtml } from 'core-ts';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -21,6 +23,7 @@ export const NoteModal: React.FC<{
   const [is_pinned, setIsPinned] = useState(Boolean(note?.is_pinned));
   const [tagId, setTagId] = useState<string | null>(note?.tag?.id || null);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [activePicker, setActivePicker] = useState<'palette' | 'tag' | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
 
@@ -35,14 +38,19 @@ export const NoteModal: React.FC<{
       onClose();
       return;
     }
-    await onSubmit({
-      title: title.trim() || null,
-      content: content.trim() || null,
-      color,
-      is_pinned,
-      tag: tagId,
-    });
-    onClose();
+    try {
+      setSubmitError(null);
+      await onSubmit({
+        title: title.trim() || null,
+        content: content.trim() || null,
+        color,
+        is_pinned,
+        tag: tagId,
+      });
+      onClose();
+    } catch (err) {
+      setSubmitError(getErrorMessage(err, 'Erreur lors de l’enregistrement de la note.'));
+    }
   }, [title, content, color, is_pinned, tagId, onSubmit, onClose]);
 
   useEffect(() => {
@@ -108,6 +116,14 @@ export const NoteModal: React.FC<{
           </TabContent>
         </Tabs>
 
+        {submitError && (
+          <div style={{ padding: '0 16px 8px' }}>
+            <Alert variant="danger" onClose={() => setSubmitError(null)}>
+              {submitError}
+            </Alert>
+          </div>
+        )}
+
         <Toolbar>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <NoteModalColorPicker
@@ -129,10 +145,10 @@ export const NoteModal: React.FC<{
 
           <button
             type="button"
-            onClick={handleSave}
+            onClick={submitError ? onClose : handleSave}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
           >
-            Fermer
+            {submitError ? 'Fermer sans enregistrer' : 'Fermer'}
           </button>
         </Toolbar>
       </Box>

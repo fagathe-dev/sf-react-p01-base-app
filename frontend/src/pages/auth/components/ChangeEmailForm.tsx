@@ -7,7 +7,6 @@ import * as S from './ProfileForms.styles';
 
 export const ChangeEmailForm: React.FC = () => {
   const user = useAuthStore((state) => state.user);
-  const setUser = useAuthStore((state) => state.setUser);
 
   const [email, setEmail] = useState(user?.email || '');
   const [loading, setLoading] = useState(false);
@@ -20,9 +19,9 @@ export const ChangeEmailForm: React.FC = () => {
     try {
       setLoading(true);
       setFeedback(null);
-      const updated = await updateEmail({ email: email.trim() });
-      setUser(updated);
-      setFeedback({ type: 'success', message: 'Adresse e-mail mise à jour avec succès.' });
+      // L'adresse n'est modifiée qu'après le clic sur le lien reçu (voir ConfirmEmailChangePage)
+      const { message } = await updateEmail({ email: email.trim() });
+      setFeedback({ type: 'success', message });
     } catch (err) {
       setFeedback({
         type: 'error',

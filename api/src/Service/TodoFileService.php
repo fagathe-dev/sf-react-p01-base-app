@@ -111,9 +111,9 @@ final class TodoFileService
             $this->generateLog(
                 LoggerLevelEnum::Error,
                 [
-                    'message' => 'Erreur lors de la suppression du fichier todo',
-                    'file_id' => (string) $todoFile->getId(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Erreur lors de la suppression du fichier todo',
+                    'file_id'   => (string) $todoFile->getId(),
+                    'exception' => $e,
                 ],
                 ['action' => 'app.todo_file.delete.error']
             );

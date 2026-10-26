@@ -95,9 +95,9 @@ final class TodoService
             $this->generateLog(
                 LoggerLevelEnum::Critical,
                 [
-                    'message' => 'Erreur critique lors de la création du todo',
-                    'user'    => $user->getUserIdentifier(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Erreur critique lors de la création du todo',
+                    'user'      => $user->getUserIdentifier(),
+                    'exception' => $e,
                 ],
                 ['action' => 'todo.create.critical_error']
             );
@@ -172,9 +172,9 @@ final class TodoService
             $this->generateLog(
                 LoggerLevelEnum::Critical,
                 [
-                    'message' => 'Erreur critique lors de la mise à jour du todo',
-                    'todo_id' => (string) $todo->getId(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Erreur critique lors de la mise à jour du todo',
+                    'todo_id'   => (string) $todo->getId(),
+                    'exception' => $e,
                 ],
                 ['action' => 'todo.update.critical_error']
             );
@@ -194,9 +194,9 @@ final class TodoService
             $this->generateLog(
                 LoggerLevelEnum::Critical,
                 [
-                    'message' => 'Erreur critique lors de la suppression du todo',
-                    'todo_id' => (string) $todo->getId(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Erreur critique lors de la suppression du todo',
+                    'todo_id'   => (string) $todo->getId(),
+                    'exception' => $e,
                 ],
                 ['action' => 'todo.delete.critical_error']
             );
@@ -259,9 +259,9 @@ final class TodoService
             $this->generateLog(
                 LoggerLevelEnum::Critical,
                 [
-                    'message' => 'Erreur lors de l\'ajout du commentaire',
-                    'todo_id' => (string) $todo->getId(),
-                    'error'   => $e->getMessage(),
+                    'message'   => 'Erreur lors de l\'ajout du commentaire',
+                    'todo_id'   => (string) $todo->getId(),
+                    'exception' => $e,
                 ],
                 ['action' => 'todo.comment.create_error']
             );
@@ -305,7 +305,7 @@ final class TodoService
                 [
                     'message'    => 'Erreur lors de la suppression du commentaire',
                     'comment_id' => $commentId,
-                    'error'      => $e->getMessage(),
+                    'exception'  => $e,
                 ],
                 ['action' => 'todo.comment.delete_error']
             );

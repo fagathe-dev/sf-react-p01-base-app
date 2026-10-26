@@ -93,4 +93,8 @@ const ToolSquareBtn = styled.button<{ $active?: boolean }>`
   }
 `;
 
-export { FormRoot, Preview, TextArea, TitleField, Toolbar, ToolGroup, ToolSquareBtn, TopBar };
+const FormError = styled.div`
+  padding: 0 20px 12px;
+`;
+
+export { FormError, FormRoot, Preview, TextArea, TitleField, Toolbar, ToolGroup, ToolSquareBtn, TopBar };

@@ -84,7 +84,7 @@ final class TagService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur critique création tag', 'user' => $user->getUserIdentifier(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur critique création tag', 'user' => $user->getUserIdentifier(), 'exception' => $e],
                 ['action' => 'tag.create.critical_error']
             );
             return $this->sendJson(['message' => 'Erreur interne.'], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -123,7 +123,7 @@ final class TagService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur critique MAJ tag', 'tag_id' => (string) $tag->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur critique MAJ tag', 'tag_id' => (string) $tag->getId(), 'exception' => $e],
                 ['action' => 'tag.update.critical_error']
             );
             return $this->sendJson(['message' => 'Erreur interne.'], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -138,7 +138,7 @@ final class TagService
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,
-                ['message' => 'Erreur critique suppression tag', 'tag_id' => (string) $tag->getId(), 'error' => $e->getMessage()],
+                ['message' => 'Erreur critique suppression tag', 'tag_id' => (string) $tag->getId(), 'exception' => $e],
                 ['action' => 'tag.delete.critical_error']
             );
             return $this->sendJson(['message' => 'Erreur interne.'], Response::HTTP_INTERNAL_SERVER_ERROR);

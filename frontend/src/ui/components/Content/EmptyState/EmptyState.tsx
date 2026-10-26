@@ -17,7 +17,7 @@ const Container = styled.div`
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: ${({ theme }) => `${theme.spacing[8]}${theme.spacing[4]}`};
+  padding: ${({ theme }) => `${theme.spacing[8]} ${theme.spacing[4]}`};
   background-color: ${({ theme }) => theme.colors.background.surface};
   border: 1px dashed ${({ theme }) => theme.colors.border.default};
   border-radius: ${({ theme }) => theme.radii.lg};
