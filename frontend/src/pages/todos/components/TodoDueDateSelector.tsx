@@ -1,6 +1,6 @@
 // src/pages/todos/components/TodoDueDateSelector.tsx
 import { DueDateEnum } from '@/types/todo.types';
-import { Icon } from '@/ui/components/Base/Icon';
+import { Icon } from '@/ui/components';
 import { dueDateEnumToIso, isoToDueDateCategory } from '@/utils/dueDate.resolver';
 import React from 'react';
 import styled from 'styled-components';

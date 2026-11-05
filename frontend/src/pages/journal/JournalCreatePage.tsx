@@ -5,7 +5,7 @@ import { CreateEntryPayload } from '@/types/journal.types';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { JournalForm, JournalLockScreen } from './components';
-import { Breadcrumb } from '@/ui/components/Navigation/Breadcrumb';
+import { Breadcrumb } from '@/ui/components';
 
 export const JournalCreatePage: React.FC = () => {
   const isUnlocked = useJournalStore((state) => state.isUnlocked);

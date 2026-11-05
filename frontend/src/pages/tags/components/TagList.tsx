@@ -1,5 +1,5 @@
 import { Tag } from '@/types/tag.types';
-import { Text } from '@/ui/components/Typo/Text';
+import { Text } from '@/ui/components';
 import React from 'react';
 import styled from 'styled-components';
 import { TagListItem } from './TagListItem';

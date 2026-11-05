@@ -1,4 +1,4 @@
-import { Icon } from '@/ui/components/Base/Icon';
+import { Icon } from '@/ui/components';
 import React, { useState } from 'react';
 import styled from 'styled-components';
 

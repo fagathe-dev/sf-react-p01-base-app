@@ -1,7 +1,7 @@
 import { deleteTodoFile } from '@/services/todo.api';
 import { TodoFile } from '@/types/todo.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Text } from '@/ui/components/Typo/Text';
+import { Icon } from '@/ui/components';
+import { Text } from '@/ui/components';
 import React, { useRef } from 'react';
 import styled from 'styled-components';
 

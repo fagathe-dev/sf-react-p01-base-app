@@ -1,6 +1,6 @@
 import { MOOD_META, MoodEnum } from '@/types/journal.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Title } from '@/ui/components/Typo/Title';
+import { Icon } from '@/ui/components';
+import { Title } from '@/ui/components';
 import React from 'react';
 import styled from 'styled-components';
 

@@ -1,8 +1,8 @@
 import { unlockJournal } from '@/services/journal.api';
-import { Button } from '@/ui/components/Base/Button';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Text } from '@/ui/components/Typo/Text';
-import { Title } from '@/ui/components/Typo/Title';
+import { Button } from '@/ui/components';
+import { Icon } from '@/ui/components';
+import { Text } from '@/ui/components';
+import { Title } from '@/ui/components';
 import React, { useState } from 'react';
 import * as S from './JournalLockScreen.styles';
 

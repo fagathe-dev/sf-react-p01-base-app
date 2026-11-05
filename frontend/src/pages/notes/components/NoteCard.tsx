@@ -1,7 +1,7 @@
-import { useClipboard } from '@/hooks/useClipboard';
+import { useClipboard } from 'core-react';
 import { Note } from '@/types/note.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Text } from '@/ui/components/Typo/Text';
+import { Icon } from '@/ui/components';
+import { Text } from '@/ui/components';
 import { convertMarkdownToHtml } from 'core-ts';
 import React, { useMemo } from 'react';
 import * as S from './NoteCard.styles';

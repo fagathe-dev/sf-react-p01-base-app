@@ -1,9 +1,9 @@
 import { updateJournalPasscode } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useJournalStore } from '@/stores/journal.store';
-import { Button } from '@/ui/components/Base/Button';
-import { Text } from '@/ui/components/Typo/Text';
-import { Title } from '@/ui/components/Typo/Title';
+import { Button } from '@/ui/components';
+import { Text } from '@/ui/components';
+import { Title } from '@/ui/components';
 import React, { useState } from 'react';
 import * as S from './ProfileForms.styles';
 

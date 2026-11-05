@@ -1,12 +1,9 @@
 import { useJournalStore } from '@/stores/journal.store';
-import { useEffect, useRef, useState } from 'react';
-import { useActionTimer } from './useActionTimer';
+import { useActionTimer, usePageFocus } from 'core-react';
+import { useEffect, useRef } from 'react';
 
 /** Durée passée sans focus avant le verrouillage automatique du journal : 1 minute. */
 export const JOURNAL_AUTO_LOCK_DELAY_MS = 90_000;
-
-/** La page est « active » si l'onglet est visible ET que la fenêtre a le focus. */
-const isPageFocused = (): boolean => document.visibilityState === 'visible' && document.hasFocus();
 
 /**
  * Verrouille le journal une minute après que la page a perdu le focus (changement d'onglet,
@@ -20,23 +17,9 @@ export const useJournalAutoLock = () => {
   const lock = useJournalStore((state) => state.lock);
   const isUnlocked = useJournalStore((state) => state.isUnlocked);
 
-  const [isFocused, setIsFocused] = useState(isPageFocused);
+  // Onglet visible ET fenêtre au premier plan
+  const isFocused = usePageFocus();
   const blurredAtRef = useRef<number | null>(null);
-
-  // Suit le focus de la page : onglet masqué, ou fenêtre qui perd / regagne le focus
-  useEffect(() => {
-    const syncFocus = () => setIsFocused(isPageFocused());
-
-    window.addEventListener('focus', syncFocus);
-    window.addEventListener('blur', syncFocus);
-    document.addEventListener('visibilitychange', syncFocus);
-
-    return () => {
-      window.removeEventListener('focus', syncFocus);
-      window.removeEventListener('blur', syncFocus);
-      document.removeEventListener('visibilitychange', syncFocus);
-    };
-  }, []);
 
   // Timer d'une minute, actif uniquement si le journal est déverrouillé ET que la page n'a pas le focus.
   // Il est annulé automatiquement dès que `delay` repasse à null (retour sur la page, ou journal verrouillé).

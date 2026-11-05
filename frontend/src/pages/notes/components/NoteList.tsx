@@ -1,5 +1,5 @@
 import { Note } from '@/types/note.types';
-import { Text } from '@/ui/components/Typo/Text';
+import { Text } from '@/ui/components';
 import React from 'react';
 import styled from 'styled-components';
 import { NoteCard } from './NoteCard';

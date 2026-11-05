@@ -1,7 +1,7 @@
 import { deleteNote, fetchNotes, restoreNote } from '@/services/note.api';
 import { Note } from '@/types/note.types';
-import { Loading } from '@/ui/components/Feedback/Loading';
-import { Title } from '@/ui/components/Typo/Title';
+import { Loading } from '@/ui/components';
+import { Title } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { NoteList } from './components';

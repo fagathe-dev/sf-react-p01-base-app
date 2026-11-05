@@ -1,6 +1,6 @@
 import { Entry, EntryMedia, MOOD_META } from '@/types/journal.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Title } from '@/ui/components/Typo/Title';
+import { Icon } from '@/ui/components';
+import { Title } from '@/ui/components';
 import { convertMarkdownToHtml } from 'core-ts';
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';

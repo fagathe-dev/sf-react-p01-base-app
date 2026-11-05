@@ -1,8 +1,8 @@
 // src/pages/todos/components/TodoCommentCard.tsx
 import { TodoComment } from '@/types/todo.types';
-import { Avatar } from '@/ui/components/Base/Avatar';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Text } from '@/ui/components/Typo/Text';
+import { Avatar } from '@/ui/components';
+import { Icon } from '@/ui/components';
+import { Text } from '@/ui/components';
 import { DateFormatter } from 'core-ts';
 import React from 'react';
 import styled from 'styled-components';

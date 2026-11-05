@@ -1,8 +1,8 @@
 // src/pages/todos/components/TodoQuickCreateForm.tsx
 import { createTodo } from '@/services/todo.api';
 import { Todo } from '@/types/todo.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Text } from '@/ui/components/Typo/Text';
+import { Icon } from '@/ui/components';
+import { Text } from '@/ui/components';
 import React, { useState } from 'react';
 import styled from 'styled-components';
 

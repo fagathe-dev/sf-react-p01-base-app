@@ -1,6 +1,6 @@
 // src/pages/todos/components/TagSelectDropdown.tsx
 import { ColorEnum, Tag, tagColors } from '@/types/tag.types';
-import { Icon } from '@/ui/components/Base/Icon';
+import { Icon } from '@/ui/components';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 

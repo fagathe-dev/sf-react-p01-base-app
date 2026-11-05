@@ -9,9 +9,9 @@ import {
 } from '@/services/todo.api';
 import { Tag } from '@/types/tag.types';
 import { Todo, UpdateTodoPayload } from '@/types/todo.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Alert } from '@/ui/components/Feedback/Alert';
-import { Text } from '@/ui/components/Typo/Text';
+import { Icon } from '@/ui/components';
+import { Alert } from '@/ui/components';
+import { Text } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { TodoCommentCard } from './TodoCommentCard';

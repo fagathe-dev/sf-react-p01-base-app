@@ -1,8 +1,8 @@
 import { updateTodo } from '@/services/todo.api';
 import { tagColors } from '@/types/tag.types';
 import { Todo } from '@/types/todo.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Text } from '@/ui/components/Typo/Text';
+import { Icon } from '@/ui/components';
+import { Text } from '@/ui/components';
 import { isoToDueDateCategory } from '@/utils/dueDate.resolver';
 import { DateFormatter } from 'core-ts';
 import React from 'react';

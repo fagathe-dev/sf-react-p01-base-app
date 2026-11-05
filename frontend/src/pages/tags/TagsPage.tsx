@@ -1,9 +1,9 @@
 import { createTag, deleteTag, fetchTags, updateTag } from '@/services/tag.api';
 import { CreateTagPayload, Tag } from '@/types/tag.types';
-import { Button } from '@/ui/components/Base/Button';
-import { Loading } from '@/ui/components/Feedback/Loading';
-import { Text } from '@/ui/components/Typo/Text';
-import { Title } from '@/ui/components/Typo/Title';
+import { Button } from '@/ui/components';
+import { Loading } from '@/ui/components';
+import { Text } from '@/ui/components';
+import { Title } from '@/ui/components';
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { TagForm, TagList } from './components';

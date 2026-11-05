@@ -1,9 +1,9 @@
 import { ApiViolations, getErrorMessage, getFieldErrors } from '@/services/apiError';
 import { ColorEnum, CreateTagPayload, tagColors } from '@/types/tag.types';
-import { Button } from '@/ui/components/Base/Button';
-import { Alert } from '@/ui/components/Feedback/Alert';
-import { TextField } from '@/ui/components/Forms/Fields/TextField';
-import { Text } from '@/ui/components/Typo/Text';
+import { Button } from '@/ui/components';
+import { Alert } from '@/ui/components';
+import { TextField } from '@/ui/components';
+import { Text } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { TagPill } from './TagPill';

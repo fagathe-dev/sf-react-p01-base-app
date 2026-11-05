@@ -5,11 +5,11 @@ import {
   restoreNote,
 } from '@/services/note.api';
 import { Note } from '@/types/note.types';
-import { Button } from '@/ui/components/Base/Button';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Loading } from '@/ui/components/Feedback/Loading';
-import { Text } from '@/ui/components/Typo';
-import { Title } from '@/ui/components/Typo/Title';
+import { Button } from '@/ui/components';
+import { Icon } from '@/ui/components';
+import { Loading } from '@/ui/components';
+import { Text } from '@/ui/components';
+import { Title } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { NoteList } from './components';

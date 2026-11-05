@@ -1,6 +1,6 @@
 import { useGeolocation } from '@/hooks';
 import { EntryLocation } from '@/types/journal.types';
-import { Icon } from '@/ui/components/Base/Icon';
+import { Icon } from '@/ui/components';
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
 

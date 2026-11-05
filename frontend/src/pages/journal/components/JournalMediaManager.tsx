@@ -1,5 +1,5 @@
 import { EntryMedia } from '@/types/journal.types';
-import { Icon } from '@/ui/components/Base/Icon';
+import { Icon } from '@/ui/components';
 import { FileSizeFormatter } from 'core-ts';
 import React, { useState } from 'react';
 import * as S from './JournalMediaManager.styles';

@@ -1,10 +1,10 @@
 // src/pages/todos/TodoPage.tsx
 import { deleteTodo, fetchTodos } from '@/services/todo.api';
 import { Todo } from '@/types/todo.types';
-import { Icon } from '@/ui/components/Base/Icon';
-import { Loading } from '@/ui/components/Feedback/Loading';
-import { Text } from '@/ui/components/Typo/Text';
-import { Title } from '@/ui/components/Typo/Title';
+import { Icon } from '@/ui/components';
+import { Loading } from '@/ui/components';
+import { Text } from '@/ui/components';
+import { Title } from '@/ui/components';
 import { DueDateCategory, isoToDueDateCategory } from '@/utils/dueDate.resolver';
 import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
