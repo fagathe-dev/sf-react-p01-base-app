@@ -31,15 +31,15 @@ Légende : **G** = garder tel quel · **A** = adapter (voir §3) · **S** = supp
 | `src/Entity/{AbstractTextEntry,Entry,EntryMedia,Location,Note,NoteFile,Tag,Todo,TodoComment,TodoFile}.php` | S | |
 | `src/Enum/Auth/*` | G | `RoleEnum`, `UserRequestTypeEnum` |
 | `src/Enum/{Color,Mood,State}Enum.php` | S | |
-| `src/Mailer/*` | G | 7 handlers |
+| `src/Mailer/**` | G | `MailDispatcher`, `MailHandlerInterface`, `NullTransportWarningListener`, 7 handlers (`Handler/`), 7 aperçus (`Preview/`) |
 | `src/Repository/{User,UserRequest}Repository.php` | G | |
 | `src/Repository/*` (autres) | S | |
 | `src/Security/Voter/OwnerVoter.php` | G | Générique (`getOwner`/`getUser`/`getAuthor`/`getCreator`) |
 | `src/Service/{AuthService,AccountService,AdminUserManager}.php` | A | Voir §3.2 à §3.4 |
-| `src/Service/{EmailDispatcherService,EmailMockService,LogService,SecretDecoder,UserRequestService}.php` | G | |
+| `src/Service/{EmailPreviewService,LogService,SecretDecoder,UserRequestService}.php` | G | |
 | `src/Service/AttachmentFileService.php` | S (ou A) | Couplé à `Todo`/`Note`/`Entry` ; à généraliser seulement si besoin de pièces jointes |
 | `src/Service/{Journal,Note,Tag,Todo,TodoFile}Service.php` | S | `TodoFileService` est déjà du code mort |
-| `templates/base.html.twig`, `templates/emails/**` | G | |
+| `templates/emails/**` | G | Seuls templates de l'API : layout et composants viennent de `@CorePhp` |
 | `migrations/` | S | Régénérer une migration initiale (voir [infrastructure_module.md](infrastructure_module.md)) |
 | `composer.json` | G | Dépend du dépôt privé `fagathe-dev/core-php` |
 

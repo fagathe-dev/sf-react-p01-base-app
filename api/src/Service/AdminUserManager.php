@@ -8,6 +8,7 @@ use App\Dto\Mail\AdminAccountCreatedMailDto;
 use App\Entity\User;
 use App\Enum\Auth\RoleEnum;
 use App\Enum\Auth\UserRequestTypeEnum;
+use App\Mailer\MailDispatcher;
 use App\Repository\UserRepository;
 use Fagathe\CorePhp\Command\AdminUserManagerInterface;
 use Fagathe\CorePhp\Enum\LoggerLevelEnum;
@@ -44,7 +45,7 @@ final class AdminUserManager implements AdminUserManagerInterface
         private readonly ValidatorInterface $validator,
         private readonly TokenGenerator $tokenGenerator,
         private readonly UserRequestService $userRequestService,
-        private readonly EmailDispatcherService $emailDispatcher,
+        private readonly MailDispatcher $mailDispatcher,
         #[Autowire('%env(default::FRONTEND_URL)%')]
         private readonly ?string $frontendUrl = null,
     ) {}
@@ -125,7 +126,7 @@ final class AdminUserManager implements AdminUserManagerInterface
         $roleEnum = RoleEnum::tryFrom($role);
 
         try {
-            $this->emailDispatcher->dispatch(new AdminAccountCreatedMailDto(
+            $this->mailDispatcher->dispatch(new AdminAccountCreatedMailDto(
                 recipientEmail: (string) $user->getEmail(),
                 recipientName: (string) $user->getUsername(),
                 username: (string) $user->getUsername(),

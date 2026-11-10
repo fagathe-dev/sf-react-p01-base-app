@@ -2,6 +2,7 @@
 export * from './NoteCard';
 export * from './NoteCard.styles';
 export * from './NoteList';
+export * from './NoteListSkeleton';
 export * from './NoteModal';
 export * from './NoteModal.styles';
 export * from './NoteModalColorPicker';

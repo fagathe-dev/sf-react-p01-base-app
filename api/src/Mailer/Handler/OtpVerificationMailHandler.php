@@ -2,17 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Mailer;
+namespace App\Mailer\Handler;
 
 use App\Dto\Mail\OtpVerificationMailDto;
+use App\Mailer\MailHandlerInterface;
 use Fagathe\CorePhp\Mailer\AbstractMailerHandler;
 use Symfony\Component\Mime\Address;
 
 /**
  * @extends AbstractMailerHandler<OtpVerificationMailDto>
  */
-final class OtpVerificationMailHandler extends AbstractMailerHandler
+final class OtpVerificationMailHandler extends AbstractMailerHandler implements MailHandlerInterface
 {
+    public static function getDtoClass(): string
+    {
+        return OtpVerificationMailDto::class;
+    }
+
     protected function getTemplate(): string
     {
         return 'emails/auth/otp_verification.html.twig';

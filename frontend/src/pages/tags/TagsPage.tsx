@@ -1,12 +1,11 @@
 import { createTag, deleteTag, fetchTags, updateTag } from '@/services/tag.api';
 import { CreateTagPayload, Tag } from '@/types/tag.types';
 import { Button } from '@/ui/components';
-import { Loading } from '@/ui/components';
 import { Text } from '@/ui/components';
 import { Title } from '@/ui/components';
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { TagForm, TagList } from './components';
+import { TagForm, TagList, TagListSkeleton } from './components';
 
 const Container = styled.div`
   display: flex;
@@ -118,9 +117,7 @@ export const TagsPage = () => {
 
       {/* Liste des tags */}
       {isLoading ? (
-        <div style={{ display: 'grid', placeItems: 'center', height: 160 }}>
-          <Loading size="lg" />
-        </div>
+        <TagListSkeleton />
       ) : (
         <TagList
           tags={tags}

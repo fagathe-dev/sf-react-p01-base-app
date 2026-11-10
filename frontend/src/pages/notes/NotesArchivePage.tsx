@@ -1,10 +1,9 @@
 import { deleteNote, fetchNotes, restoreNote } from '@/services/note.api';
 import { Note } from '@/types/note.types';
-import { Loading } from '@/ui/components';
 import { Title } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { NoteList } from './components';
+import { NoteList, NoteListSkeleton } from './components';
 
 const Container = styled.div`
   display: flex;
@@ -26,7 +25,7 @@ export const NotesArchivePage: React.FC = () => {
     <Container>
       <Title as="h2">Archives</Title>
       {loading ? (
-        <Loading size="lg" />
+        <NoteListSkeleton label="Chargement des archives…" />
       ) : (
         <NoteList
           notes={notes}

@@ -46,76 +46,9 @@ const TitleInput = styled.input`
   color: ${({ theme }) => theme.colors.text.heading};
 `;
 
-const ContentArea = styled.textarea`
-  width: 100%;
-  min-height: 70vh;
-  padding: 10px 16px;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: inherit;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.text.heading};
-  resize: vertical;
-  box-sizing: border-box;
-`;
-
-const PreviewArea = styled.div`
-  width: 100%;
-  min-height: 30vh;
-  max-height: 70vh;
-  overflow-y: auto;
-  padding: 10px 16px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.text.heading};
-  box-sizing: border-box;
-
-  p {
-    margin: 0 0 8px;
-  }
-  p:last-child {
-    margin-bottom: 0;
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    margin: 8px 0 4px;
-    font-weight: 600;
-  }
-  h1 {
-    font-size: 1.25rem;
-  }
-  h2 {
-    font-size: 1.1rem;
-  }
-  h3 {
-    font-size: 1rem;
-  }
-  ul,
-  ol {
-    margin: 0 0 8px;
-    padding-left: 20px;
-  }
-  code {
-    background-color: rgba(0, 0, 0, 0.06);
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: monospace;
-  }
-  mark {
-    background-color: #fef08a;
-    padding: 0 2px;
-    border-radius: 2px;
-  }
-  blockquote {
-    margin: 0 0 8px;
-    padding-left: 10px;
-    border-left: 3px solid rgba(0, 0, 0, 0.15);
-    color: ${({ theme }) => theme.colors.text.muted};
-  }
+// Zone de l'éditeur Markdown (core-react) : marges alignées sur le titre
+const EditorArea = styled.div`
+  padding: 4px 16px 12px;
 `;
 
 const Toolbar = styled.div`
@@ -126,4 +59,4 @@ const Toolbar = styled.div`
   border-top: 1px solid rgba(0, 0, 0, 0.05);
 `;
 
-export { Backdrop, Box, ContentArea, PreviewArea, TitleInput, Toolbar, TopRow };
+export { Backdrop, Box, EditorArea, TitleInput, Toolbar, TopRow };

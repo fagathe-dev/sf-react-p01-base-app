@@ -2,17 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Mailer;
+namespace App\Mailer\Handler;
 
 use App\Dto\Mail\AdminAccountCreatedMailDto;
+use App\Mailer\MailHandlerInterface;
 use Fagathe\CorePhp\Mailer\AbstractMailerHandler;
 use Symfony\Component\Mime\Address;
 
 /**
  * @extends AbstractMailerHandler<AdminAccountCreatedMailDto>
  */
-final class AdminAccountCreatedMailHandler extends AbstractMailerHandler
+final class AdminAccountCreatedMailHandler extends AbstractMailerHandler implements MailHandlerInterface
 {
+    public static function getDtoClass(): string
+    {
+        return AdminAccountCreatedMailDto::class;
+    }
+
     protected function getTemplate(): string
     {
         return 'emails/admin/account_created.html.twig';

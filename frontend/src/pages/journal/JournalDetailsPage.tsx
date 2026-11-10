@@ -4,7 +4,6 @@ import { useJournalStore } from '@/stores/journal.store';
 import { Entry, EntryMedia, MOOD_META } from '@/types/journal.types';
 import { Button } from '@/ui/components';
 import { Icon } from '@/ui/components';
-import { Loading } from '@/ui/components';
 import { Breadcrumb } from '@/ui/components';
 import { Text } from '@/ui/components';
 import { Title } from '@/ui/components';
@@ -12,7 +11,7 @@ import { convertMarkdownToHtml } from 'core-ts';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { JournalLockScreen } from './components';
+import { JournalEntrySkeleton, JournalLockScreen } from './components';
 
 const PageWrap = styled.article`
   display: flex;
@@ -100,7 +99,7 @@ export const JournalDetailsPage: React.FC = () => {
   };
 
   if (!isUnlocked) return <JournalLockScreen />;
-  if (loading) return <Loading size="lg" />;
+  if (loading) return <JournalEntrySkeleton />;
   if (error || !entry) return <Text>{error || 'Entrée introuvable'}</Text>;
 
   const moodMeta = entry.mood ? MOOD_META[entry.mood] : null;

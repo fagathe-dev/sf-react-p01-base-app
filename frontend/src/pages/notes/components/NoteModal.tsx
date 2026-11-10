@@ -5,10 +5,9 @@ import { CreateNotePayload, Note } from '@/types/note.types';
 import { ColorEnum, Tag } from '@/types/tag.types';
 import { Icon } from '@/ui/components';
 import { Alert } from '@/ui/components';
-import { TabContent, TabList, Tabs, TabTrigger } from '@/ui/components';
-import { convertMarkdownToHtml } from 'core-ts';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Backdrop, Box, ContentArea, PreviewArea, TitleInput, Toolbar, TopRow } from './NoteModal.styles';
+import { MarkdownEditor } from '@/ui/components';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Backdrop, Box, EditorArea, TitleInput, Toolbar, TopRow } from './NoteModal.styles';
 import { NoteModalColorPicker } from './NoteModalColorPicker';
 import { NoteModalTagPicker } from './NoteModalTagPicker';
 
@@ -67,8 +66,6 @@ export const NoteModal: React.FC<{
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activePicker, handleSave]);
 
-  const previewHtml = useMemo(() => convertMarkdownToHtml(content), [content]);
-
   return (
     <Backdrop onClick={handleSave}>
       <Box
@@ -90,31 +87,17 @@ export const NoteModal: React.FC<{
           </button>
         </TopRow>
 
-        <Tabs defaultValue="write">
-          <TabList style={{ padding: '0 16px' }}>
-            <TabTrigger value="write">Édition</TabTrigger>
-            <TabTrigger value="preview">Aperçu</TabTrigger>
-          </TabList>
-
-          <TabContent value="write" style={{ paddingTop: 0 }}>
-            <ContentArea
-              placeholder="Rédigez votre note en Markdown…"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              autoFocus
-            />
-          </TabContent>
-
-          <TabContent value="preview" style={{ paddingTop: 0 }}>
-            <PreviewArea>
-              {previewHtml ? (
-                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-              ) : (
-                <span style={{ color: '#888', fontStyle: 'italic', fontSize: 13 }}>Rien à prévisualiser…</span>
-              )}
-            </PreviewArea>
-          </TabContent>
-        </Tabs>
+        {/* Éditeur Markdown de core-react : barre d'outils, raccourcis et onglets Écrire / Aperçu */}
+        <EditorArea>
+          <MarkdownEditor
+            aria-label="Contenu de la note"
+            placeholder="Rédigez votre note en Markdown…"
+            value={content}
+            onChange={setContent}
+            rows={14}
+            autoFocus
+          />
+        </EditorArea>
 
         {submitError && (
           <div style={{ padding: '0 16px 8px' }}>

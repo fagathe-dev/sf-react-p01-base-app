@@ -33,26 +33,9 @@ const TitleField = styled.input`
   }
 `;
 
-const TextArea = styled.textarea`
-  width: 100%;
-  min-height: 280px;
-  border: none;
-  outline: none;
-  padding: 16px 20px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.text.heading};
-  box-sizing: border-box;
-`;
-
-const Preview = styled.div`
-  min-height: 280px;
-  padding: 16px 20px;
-  font-size: 14px;
-  line-height: 1.5;
-  box-sizing: border-box;
+// Zone de l'éditeur Markdown (core-react) : marges alignées sur le titre
+const EditorArea = styled.div`
+  padding: 4px 20px 16px;
 `;
 
 const Toolbar = styled.div`
@@ -72,14 +55,15 @@ const ToolGroup = styled.div`
   flex-wrap: wrap;
 `;
 
-const ToolSquareBtn = styled.button<{ $active?: boolean }>`
+const ToolSquareBtn = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 38px;
   height: 38px;
   border-radius: 8px;
-  border: ${({ $active, theme }) => ($active ? `1px solid ${theme.colors.border.default}` : 'none')};
+  border: none;
+  box-shadow: none;
   background-color: transparent;
   color: ${({ theme }) => theme.colors.text.heading};
   font-size: 20px;
@@ -97,4 +81,4 @@ const FormError = styled.div`
   padding: 0 20px 12px;
 `;
 
-export { FormError, FormRoot, Preview, TextArea, TitleField, Toolbar, ToolGroup, ToolSquareBtn, TopBar };
+export { EditorArea, FormError, FormRoot, TitleField, Toolbar, ToolGroup, ToolSquareBtn, TopBar };

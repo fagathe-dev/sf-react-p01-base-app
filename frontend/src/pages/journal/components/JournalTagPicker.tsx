@@ -15,8 +15,8 @@ const TriggerPill = styled.button<{ $color?: ColorEnum | null }>`
   height: 38px;
   padding: 0 12px;
   border-radius: 8px;
-  border: ${({ $color }) =>
-    $color && tagColors[$color] ? `1px solid ${tagColors[$color]}55` : 'none'};
+  border: none;
+  box-shadow: none;
   background-color: ${({ $color, theme }) =>
     $color && tagColors[$color]
       ? `${tagColors[$color]}20`

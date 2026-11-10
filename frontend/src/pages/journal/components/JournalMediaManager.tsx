@@ -1,7 +1,7 @@
 import { EntryMedia } from '@/types/journal.types';
 import { Icon } from '@/ui/components';
 import { FileSizeFormatter } from 'core-ts';
-import React, { useState } from 'react';
+import React from 'react';
 import * as S from './JournalMediaManager.styles';
 
 const MAX_SIZE = '50M';
@@ -33,52 +33,29 @@ interface JournalMediaManagerProps {
   existingMedias: EntryMedia[];
   pendingFiles: File[];
   errors: string[];
-  onAddFiles: (files: File[]) => void;
   onRemovePending: (index: number) => void;
   onRemoveExisting: (id: string) => void;
-  onTriggerInput: () => void;
 }
 
 export const JournalMediaManager: React.FC<JournalMediaManagerProps> = ({
   existingMedias,
   pendingFiles,
   errors,
-  onAddFiles,
   onRemovePending,
   onRemoveExisting,
-  onTriggerInput,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    if (e.dataTransfer?.files?.length) {
-      onAddFiles(Array.from(e.dataTransfer.files));
-    }
-  };
-
   const renderMediaIcon = (mime: string) => {
     if (mime.startsWith('video/')) return <Icon name="video-outline" size={20} />;
     return <Icon name="music-note-outline" size={20} />;
   };
 
+  // Rien à afficher : pas de bloc vide sous l'éditeur
+  if (errors.length === 0 && existingMedias.length === 0 && pendingFiles.length === 0) {
+    return null;
+  }
+
   return (
     <S.Container>
-      <S.DropZone
-        $isDragOver={isDragOver}
-        onClick={onTriggerInput}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragOver(true);
-        }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={handleDrop}
-      >
-        <Icon name="cloud-upload-outline" size={18} />
-        <span>Glisse tes images, vidéos ou audios ici (max {MAX_SIZE}) ou clique pour parcourir</span>
-      </S.DropZone>
-
       {errors.map((err, idx) => (
         <S.ErrorAlert key={idx}>{err}</S.ErrorAlert>
       ))}

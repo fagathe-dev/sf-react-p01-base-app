@@ -11,6 +11,7 @@ import { Tag } from '@/types/tag.types';
 import { Todo, UpdateTodoPayload } from '@/types/todo.types';
 import { Icon } from '@/ui/components';
 import { Alert } from '@/ui/components';
+import { MarkdownEditor } from '@/ui/components';
 import { Text } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
@@ -77,22 +78,9 @@ const TitleInput = styled.input`
   }
 `;
 
-const Textarea = styled.textarea`
+// Conteneur de l'éditeur Markdown : sert à détecter la sortie du champ (enregistrement automatique)
+const DescriptionField = styled.div`
   width: 100%;
-  min-height: 80px;
-  padding: ${({ theme }) => theme.spacing[2.5]};
-  background-color: ${({ theme }) => theme.colors.background.body};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.sm};
-  font-family: inherit;
-  font-size: ${({ theme }) => theme.typography.sizes.xs};
-  color: ${({ theme }) => theme.colors.text.heading};
-  resize: vertical;
-  outline: none;
-  box-sizing: border-box;
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary.base};
-  }
 `;
 
 export const TodoEditForm: React.FC<{
@@ -224,15 +212,21 @@ export const TodoEditForm: React.FC<{
           }
         />
 
-        <Textarea
-          placeholder="Ajouter une note ou description…"
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          onBlur={() =>
-            desc !== (todo.description || '') &&
-            save({ description: desc || null })
-          }
-        />
+        {/* Éditeur Markdown de core-react : enregistré quand le focus quitte l'éditeur (pas sur sa barre d'outils) */}
+        <DescriptionField
+          onBlur={(e) => {
+            if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+            if (desc !== (todo.description || '')) save({ description: desc || null });
+          }}
+        >
+          <MarkdownEditor
+            aria-label="Description de la tâche"
+            placeholder="Ajouter une note ou description…"
+            value={desc}
+            onChange={setDesc}
+            rows={5}
+          />
+        </DescriptionField>
 
         <div>
           <Text size="xs" weight="semibold" style={{ marginBottom: 6 }}>

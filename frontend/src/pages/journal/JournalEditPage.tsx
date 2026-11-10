@@ -2,11 +2,10 @@ import { useJournalAutoLock } from '@/hooks/useJournalAutoLock';
 import { fetchEntryById, updateEntry } from '@/services/journal.api';
 import { useJournalStore } from '@/stores/journal.store';
 import { CreateEntryPayload, Entry } from '@/types/journal.types';
-import { Loading } from '@/ui/components';
 import { Breadcrumb } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { JournalForm, JournalLockScreen } from './components';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { JournalForm, JournalFormSkeleton, JournalLockScreen } from './components';
 
 export const JournalEditPage: React.FC = () => {
   const isUnlocked = useJournalStore((state) => state.isUnlocked);
@@ -17,6 +16,8 @@ export const JournalEditPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  // Ouvert depuis la liste : « Annuler » y ramène directement
+  const from = (useLocation().state as { from?: string } | null)?.from;
 
   useEffect(() => {
     if (journalId && isUnlocked) {
@@ -41,7 +42,7 @@ export const JournalEditPage: React.FC = () => {
     return <JournalLockScreen />;
   }
 
-  if (loading) return <Loading size="lg" />;
+  if (loading) return <JournalFormSkeleton />;
   if (!entry) return null;
 
   return (
@@ -57,7 +58,7 @@ export const JournalEditPage: React.FC = () => {
         isEdit
         initialEntry={entry}
         onSubmit={handleUpdate}
-        onCancel={() => navigate(`/journal/${journalId}`)}
+        onCancel={() => navigate(from ?? `/journal/${journalId}`)}
         loading={saving}
       />
     </div>

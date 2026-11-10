@@ -2,17 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Mailer;
+namespace App\Mailer\Handler;
 
 use App\Dto\Mail\AccountDeletionCodeMailDto;
+use App\Mailer\MailHandlerInterface;
 use Fagathe\CorePhp\Mailer\AbstractMailerHandler;
 use Symfony\Component\Mime\Address;
 
 /**
  * @extends AbstractMailerHandler<AccountDeletionCodeMailDto>
  */
-final class AccountDeletionCodeMailHandler extends AbstractMailerHandler
+final class AccountDeletionCodeMailHandler extends AbstractMailerHandler implements MailHandlerInterface
 {
+    public static function getDtoClass(): string
+    {
+        return AccountDeletionCodeMailDto::class;
+    }
+
     protected function getTemplate(): string
     {
         return 'emails/auth/account_deletion_code.html.twig';

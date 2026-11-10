@@ -12,6 +12,7 @@ use App\Dto\Mail\RegistrationConfirmedMailDto;
 use App\Entity\User;
 use App\Enum\Auth\RoleEnum;
 use App\Enum\Auth\UserRequestTypeEnum;
+use App\Mailer\MailDispatcher;
 use App\Repository\UserRepository;
 use Fagathe\CorePhp\Enum\LoggerLevelEnum;
 use Fagathe\CorePhp\Generator\TokenGenerator;
@@ -37,14 +38,15 @@ final class AuthService
     use ResponseTrait, DatetimeTrait, LoggerTrait, RequestTrait;
 
     /** Validité du lien de vérification envoyé à l'inscription */
-    private const VERIFICATION_TTL_HOURS = 72;
+    public const VERIFICATION_TTL_HOURS = 72;
 
     /** Validité du lien de réinitialisation du mot de passe */
-    private const PASSWORD_RESET_TTL_HOURS = 24;
+    public const PASSWORD_RESET_TTL_HOURS = 24;
 
     /** Connexion sans mot de passe : validité du code, essais autorisés, délai entre deux envois */
     private const LOGIN_CODE_TTL_SECONDS = 90;
-    private const LOGIN_CODE_VALIDITY_LABEL = '1 min 30';
+    public const LOGIN_CODE_VALIDITY_LABEL = '1 min 30';
+    public const LOGIN_CODE_PURPOSE_LABEL = 'vous connecter';
     private const LOGIN_CODE_MAX_ATTEMPTS = 5;
     private const LOGIN_CODE_RESEND_DELAY_SECONDS = 30;
 
@@ -60,7 +62,7 @@ final class AuthService
         private readonly TokenGenerator $tokenGenerator,
         private readonly SecretDecoder $secretDecoder,
         private readonly JWTTokenManagerInterface $jwtManager,
-        private readonly EmailDispatcherService $emailDispatcher,
+        private readonly MailDispatcher $mailDispatcher,
         private readonly CacheItemPoolInterface $cache,
         #[Autowire('%env(default::FRONTEND_URL)%')]
         private readonly ?string $frontendUrl = null,
@@ -307,11 +309,11 @@ final class AuthService
             if ($loginRequest?->getCode() !== null) {
                 $this->resetLoginCodeAttempts($user);
 
-                $this->emailDispatcher->dispatchSilently(new OtpVerificationMailDto(
+                $this->mailDispatcher->dispatchSilently(new OtpVerificationMailDto(
                     recipientEmail: (string) $user->getEmail(),
                     recipientName: $this->resolveRecipientName($user),
                     otpCode: $loginRequest->getCode(),
-                    purposeLabel: 'vous connecter',
+                    purposeLabel: self::LOGIN_CODE_PURPOSE_LABEL,
                     validityLabel: self::LOGIN_CODE_VALIDITY_LABEL,
                 ));
             }
@@ -400,7 +402,7 @@ final class AuthService
                 );
 
                 // Échec déjà journalisé par AbstractMailerHandler : réponse constante (anti-énumération)
-                $this->emailDispatcher->dispatchSilently(new ForgotPasswordMailDto(
+                $this->mailDispatcher->dispatchSilently(new ForgotPasswordMailDto(
                     recipientEmail: (string) $user->getEmail(),
                     recipientName: $this->resolveRecipientName($user),
                     resetUrl: $resetUrl,
@@ -484,7 +486,7 @@ final class AuthService
                 'token'   => $this->jwtManager->create($user),
                 'user'    => $user,
                 'message' => $message,
-            ], static fn (mixed $value): bool => $value !== null),
+            ], static fn(mixed $value): bool => $value !== null),
             Response::HTTP_OK,
             context: ['groups' => ['user.read']]
         );
@@ -519,7 +521,7 @@ final class AuthService
             throw new \RuntimeException('Impossible de générer le lien de vérification.');
         }
 
-        $this->emailDispatcher->dispatch(new AccountVerificationMailDto(
+        $this->mailDispatcher->dispatch(new AccountVerificationMailDto(
             recipientEmail: (string) $user->getEmail(),
             recipientName: $this->resolveRecipientName($user),
             verificationUrl: sprintf(
@@ -591,7 +593,7 @@ final class AuthService
      */
     private function sendWelcomeEmail(User $user): void
     {
-        $this->emailDispatcher->dispatchSilently(new RegistrationConfirmedMailDto(
+        $this->mailDispatcher->dispatchSilently(new RegistrationConfirmedMailDto(
             recipientEmail: (string) $user->getEmail(),
             recipientName: $this->resolveRecipientName($user),
             loginUrl: sprintf('%s/login', $this->resolveFrontendBaseUrl()),

@@ -3,31 +3,16 @@ import { fetchEntries, updateEntry } from '@/services/journal.api';
 import { useJournalStore } from '@/stores/journal.store';
 import { Entry } from '@/types/journal.types';
 import { Button } from '@/ui/components';
-import { Loading } from '@/ui/components';
 import { Title } from '@/ui/components';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { JournalCard, JournalLockScreen } from './components';
+import { JournalCard, JournalGrid, JournalListSkeleton, JournalLockScreen } from './components';
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-`;
-
-const Grid = styled.div`
-  columns: 3 320px;
-  column-gap: 16px;
-  width: 100%;
-
-  @media (max-width: 1024px) {
-    columns: 2 280px;
-  }
-
-  @media (max-width: 640px) {
-    columns: 1;
-  }
 `;
 
 export const JournalsPage: React.FC = () => {
@@ -84,7 +69,7 @@ export const JournalsPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <Loading size="lg" />
+        <JournalListSkeleton />
       ) : (
         <>
           {pinned.length > 0 && (
@@ -92,11 +77,11 @@ export const JournalsPage: React.FC = () => {
               <Title as="h4" style={{ marginBottom: 12 }}>
                 Épinglées
               </Title>
-              <Grid>
+              <JournalGrid>
                 {pinned.map((e) => (
                   <JournalCard key={e.id} entry={e} onTogglePin={handleTogglePin} />
                 ))}
-              </Grid>
+              </JournalGrid>
             </div>
           )}
 
@@ -106,11 +91,11 @@ export const JournalsPage: React.FC = () => {
                 Autres entrées
               </Title>
             )}
-            <Grid>
+            <JournalGrid>
               {others.map((e) => (
                 <JournalCard key={e.id} entry={e} onTogglePin={handleTogglePin} />
               ))}
-            </Grid>
+            </JournalGrid>
           </div>
         </>
       )}

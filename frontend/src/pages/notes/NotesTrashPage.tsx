@@ -7,12 +7,11 @@ import {
 import { Note } from '@/types/note.types';
 import { Button } from '@/ui/components';
 import { Icon } from '@/ui/components';
-import { Loading } from '@/ui/components';
 import { Text } from '@/ui/components';
 import { Title } from '@/ui/components';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { NoteList } from './components';
+import { NoteList, NoteListSkeleton } from './components';
 
 const Container = styled.div`
   display: flex;
@@ -96,9 +95,7 @@ export const NotesTrashPage: React.FC = () => {
       </HeaderRow>
 
       {loading ? (
-        <div style={{ display: 'grid', placeItems: 'center', height: 160 }}>
-          <Loading size="lg" />
-        </div>
+        <NoteListSkeleton label="Chargement de la corbeille…" />
       ) : (
         <NoteList
           notes={notes}

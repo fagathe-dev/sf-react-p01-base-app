@@ -14,6 +14,7 @@ import {
   ChangeJournalPasscodeForm,
   ChangePasswordForm,
   DeleteAccountCard,
+  ProfileSkeleton,
 } from './components';
 
 const PageContainer = styled.div`
@@ -52,7 +53,7 @@ export const ProfilePage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { isAdmin, roleLabel } = useAuth();
 
-  if (!user) return null;
+  if (!user) return <ProfileSkeleton />;
 
   const fullName = [user.firstname, user.lastname].filter(Boolean).join(' ');
 

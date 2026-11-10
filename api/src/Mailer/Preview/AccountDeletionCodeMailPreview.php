@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Mailer\Preview;
+
+use App\Dto\Mail\AccountDeletionCodeMailDto;
+use App\Service\AccountService;
+use Symfony\Component\DependencyInjection\Attribute\AsTaggedItem;
+
+#[AsTaggedItem(priority: 20)]
+final class AccountDeletionCodeMailPreview extends AbstractMailPreview
+{
+    public static function getSlug(): string
+    {
+        return 'account-deletion-code';
+    }
+
+    public function getLabel(): string
+    {
+        return 'Suppression de compte';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Code à 6 chiffres (10 min) confirmant la suppression définitive du compte.';
+    }
+
+    public function createDto(): object
+    {
+        return new AccountDeletionCodeMailDto(
+            recipientEmail: self::RECIPIENT_EMAIL,
+            recipientName: self::RECIPIENT_NAME,
+            code: self::fakeCode(),
+            ttlMinutes: AccountService::DELETION_CODE_TTL_MINUTES,
+        );
+    }
+}

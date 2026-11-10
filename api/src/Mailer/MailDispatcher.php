@@ -2,22 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace App\Mailer;
 
-use App\Dto\Mail\AccountDeletionCodeMailDto;
-use App\Dto\Mail\AccountVerificationMailDto;
-use App\Dto\Mail\AdminAccountCreatedMailDto;
-use App\Dto\Mail\EmailChangeVerificationMailDto;
-use App\Dto\Mail\ForgotPasswordMailDto;
-use App\Dto\Mail\OtpVerificationMailDto;
-use App\Dto\Mail\RegistrationConfirmedMailDto;
-use App\Mailer\AccountDeletionCodeMailHandler;
-use App\Mailer\AccountVerificationMailHandler;
-use App\Mailer\AdminAccountCreatedMailHandler;
-use App\Mailer\EmailChangeVerificationMailHandler;
-use App\Mailer\ForgotPasswordMailHandler;
-use App\Mailer\OtpVerificationMailHandler;
-use App\Mailer\RegistrationConfirmedMailHandler;
 use Fagathe\CorePhp\Enum\LoggerLevelEnum;
 use Fagathe\CorePhp\Mailer\AbstractMailerHandler;
 use Fagathe\CorePhp\Mailer\Exception\MailerExceptionInterface;
@@ -28,26 +14,16 @@ use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\DependencyInjection\Attribute\AutowireLocator;
 use Throwable;
 
-final readonly class EmailDispatcherService
+/**
+ * Point d'entrée unique d'envoi des e-mails : retrouve le handler correspondant au DTO.
+ */
+final class MailDispatcher
 {
     use LoggerTrait;
 
-    /**
-     * @var array<class-string, class-string<AbstractMailerHandler>>
-     */
-    private const HANDLER_MAP = [
-        AccountDeletionCodeMailDto::class     => AccountDeletionCodeMailHandler::class,
-        AccountVerificationMailDto::class     => AccountVerificationMailHandler::class,
-        AdminAccountCreatedMailDto::class     => AdminAccountCreatedMailHandler::class,
-        EmailChangeVerificationMailDto::class => EmailChangeVerificationMailHandler::class,
-        ForgotPasswordMailDto::class          => ForgotPasswordMailHandler::class,
-        OtpVerificationMailDto::class         => OtpVerificationMailHandler::class,
-        RegistrationConfirmedMailDto::class   => RegistrationConfirmedMailHandler::class,
-    ];
-
     public function __construct(
-        #[AutowireLocator(self::HANDLER_MAP)]
-        private ContainerInterface $handlersLocator,
+        #[AutowireLocator(MailHandlerInterface::TAG, defaultIndexMethod: 'getDtoClass')]
+        private readonly ContainerInterface $handlers,
     ) {}
 
     /**
@@ -85,6 +61,9 @@ final readonly class EmailDispatcherService
         }
     }
 
+    /**
+     * Construit l'e-mail sans l'envoyer (prévisualisation, tests).
+     */
     public function createEmail(object $dto): TemplatedEmail
     {
         return $this->resolveHandler($dto)->createEmail($dto);
@@ -95,18 +74,16 @@ final readonly class EmailDispatcherService
      */
     private function resolveHandler(object $dto): AbstractMailerHandler
     {
-        $dtoClass = $dto::class;
-
-        if (!$this->handlersLocator->has($dtoClass)) {
+        if (!$this->handlers->has($dto::class)) {
             throw new InvalidArgumentException(sprintf(
-                'Aucun MailerHandler configuré dans %s pour le DTO "%s".',
-                self::class,
-                $dtoClass
+                'Aucun handler (%s) ne prend en charge le DTO "%s".',
+                MailHandlerInterface::class,
+                $dto::class
             ));
         }
 
         /** @var AbstractMailerHandler<object> $handler */
-        $handler = $this->handlersLocator->get($dtoClass);
+        $handler = $this->handlers->get($dto::class);
 
         return $handler;
     }

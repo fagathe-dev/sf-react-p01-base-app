@@ -1,12 +1,11 @@
 import { createNote, deleteNote, fetchNotes, updateNote } from '@/services/note.api';
 import { CreateNotePayload, Note } from '@/types/note.types';
 import { Button } from '@/ui/components';
-import { Loading } from '@/ui/components';
 import { Text } from '@/ui/components';
 import { Title } from '@/ui/components';
 import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { NoteList, NoteModal } from './components';
+import { NoteList, NoteListSkeleton, NoteModal } from './components';
 
 const Container = styled.div`
   display: flex;
@@ -95,7 +94,7 @@ export const NotesPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <Loading size="lg" />
+        <NoteListSkeleton />
       ) : (
         <>
           {pinned.length > 0 && (

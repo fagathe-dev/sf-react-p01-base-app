@@ -2,14 +2,14 @@
 
 ## 1. Objet
 
-Envoi des e-mails transactionnels via une chaîne typée et extensible : **DTO → `EmailDispatcherService` → handler → template Twig**.
+Envoi des e-mails transactionnels via une chaîne typée et extensible : **DTO → `MailDispatcher` → handler → template Twig**, sur la base mailer de `core-php` (`AbstractMailerHandler`, layout et composants `@CorePhp`).
 
 ## 2. Règles métier
 
 | ID | Règle |
 |---|---|
 | RG-MAIL-01 | Chaque e-mail est décrit par un **DTO immuable** (`final readonly`) validé (`Assert`) avant tout envoi. DTO invalide → `InvalidEmailDataException`. |
-| RG-MAIL-02 | Chaque DTO a **un seul handler**, déclaré dans `EmailDispatcherService::HANDLER_MAP`. DTO non mappé → `InvalidArgumentException`. |
+| RG-MAIL-02 | Chaque DTO a **un seul handler**, qui le déclare lui-même (`MailHandlerInterface::getDtoClass()`) ; `MailDispatcher` le retrouve par la classe du DTO. DTO sans handler → `InvalidArgumentException`. |
 | RG-MAIL-03 | Avant l'envoi, chaque destinataire est contrôlé : format valide, domaine non réservé (`example.com/net/org/edu`, `invalid`, `test`, `localhost`), et enregistrement **MX** exploitable (MX `.` = refus). Échec → `RecipientUnreachableException`. |
 | RG-MAIL-04 | Échec du transport → `EmailSendingException` (`isRetryable()` faux si le destinataire est rejeté). |
 | RG-MAIL-05 | Succès et échecs sont journalisés par le handler (actions `mailer.send_success`, `mailer.send_error`, `mailer.recipient_unreachable`). Les données sensibles du DTO (ex. mot de passe en clair) ne sont pas journalisées. |
@@ -31,15 +31,16 @@ Envoi des e-mails transactionnels via une chaîne typée et extensible : **DTO �
 
 Champs communs : `recipientEmail` (ou `newEmail`), `recipientName` (prénom + nom, sinon username). Durées exposées : `ttlHours` / `ttlMinutes`, `validityLabel` (libellé prioritaire, ex. « 1 min 30 »).
 
-Templates : héritent de `@CorePhp/layout.html.twig` et composent `@CorePhp/components/_{text,button,card,box,alert,divider}.html.twig`.
+Templates : héritent de `@CorePhp/layout.html.twig` et composent `@CorePhp/components/_{text,button,alert,code,details,divider}.html.twig` (tokens du Design System via la globale `email_theme`, aucune couleur en dur).
 
 ## 4. Ajouter un e-mail
 
 1. Créer le DTO dans `src/Dto/Mail/` (`final readonly`, contraintes `Assert`).
-2. Créer le handler dans `src/Mailer/` : `extends AbstractMailerHandler`, implémenter `getTemplate()`, `getSubject($dto)`, `getRecipients($dto)` ; surcharger si besoin `getContext()` (ne jamais utiliser la clé `email`), `getFrom()`, `getReplyTo()`.
+2. Créer le handler dans `src/Mailer/Handler/` : `extends AbstractMailerHandler implements MailHandlerInterface`, implémenter `getDtoClass()`, `getTemplate()`, `getSubject($dto)`, `getRecipients($dto)` ; surcharger si besoin `getContext()` (ne jamais utiliser la clé `email`), `getFrom()`, `getReplyTo()`.
 3. Créer le template dans `templates/emails/<domaine>/`.
-4. Ajouter le couple `DTO::class => Handler::class` dans `EmailDispatcherService::HANDLER_MAP`.
-5. Ajouter un mock dans `EmailMockService` pour la prévisualisation ([email_preview_module.md](email_preview_module.md)).
+4. Créer son aperçu dans `src/Mailer/Preview/` ([email_preview_module.md](email_preview_module.md)).
+
+`MailDispatcher` et `EmailPreviewService` ne sont pas modifiés.
 
 ## 5. Configuration
 
@@ -64,4 +65,4 @@ Paramètre `core_php.email.check_deliverability` (défaut `true`) : désactivabl
 
 ## 7. Sources
 
-`src/Service/EmailDispatcherService.php`, `src/Mailer/*`, `src/Dto/Mail/*`, `templates/emails/**`, `config/packages/mailer.yaml`, `vendor/fagathe-dev/core-php/src/Mailer/*`, `vendor/fagathe-dev/core-php/config/my_email.yaml`.
+`src/Mailer/{MailDispatcher,MailHandlerInterface,NullTransportWarningListener}.php`, `src/Mailer/Handler/*`, `src/Dto/Mail/*`, `templates/emails/**`, `config/packages/mailer.yaml`, `vendor/fagathe-dev/core-php/src/Mailer/*`, `vendor/fagathe-dev/core-php/config/my_email.yaml`.

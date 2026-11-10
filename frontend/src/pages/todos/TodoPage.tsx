@@ -2,13 +2,12 @@
 import { deleteTodo, fetchTodos } from '@/services/todo.api';
 import { Todo } from '@/types/todo.types';
 import { Icon } from '@/ui/components';
-import { Loading } from '@/ui/components';
 import { Text } from '@/ui/components';
 import { Title } from '@/ui/components';
 import { DueDateCategory, isoToDueDateCategory } from '@/utils/dueDate.resolver';
 import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { TodoEditForm, TodoList, TodoQuickCreateForm } from './components';
+import { TodoEditForm, TodoList, TodoListSkeleton, TodoQuickCreateForm } from './components';
 
 const Container = styled.div`
   display: flex;
@@ -102,14 +101,6 @@ export const TodoPage: React.FC = () => {
     month: 'long',
   }).format(new Date());
 
-  if (loading) {
-    return (
-      <div style={{ display: 'grid', placeItems: 'center', height: 200 }}>
-        <Loading size="lg" />
-      </div>
-    );
-  }
-
   const doneList = grouped.done ?? [];
 
   return (
@@ -121,8 +112,10 @@ export const TodoPage: React.FC = () => {
         </Text>
       </PageHeader>
 
+      {loading && <TodoListSkeleton />}
+
       {/* Sections actives ordonnées */}
-      {SECTIONS.map(({ key, label, icon }) => {
+      {!loading && SECTIONS.map(({ key, label, icon }) => {
         const list = grouped[key] ?? [];
         if (key !== 'none' && list.length === 0) return null;
 
@@ -147,7 +140,7 @@ export const TodoPage: React.FC = () => {
       })}
 
       {/* Tâches terminées tout en bas */}
-      {doneList.length > 0 && (
+      {!loading && doneList.length > 0 && (
         <div>
           <Text size="xs" weight="semibold" color="muted" style={{ margin: '14px 0 8px' }}>
             Terminées ({doneList.length})
@@ -166,9 +159,11 @@ export const TodoPage: React.FC = () => {
         />
       )}
 
-      <BottomBar>
-        <TodoQuickCreateForm onCreated={(t) => setTodos((prev) => [t, ...prev])} />
-      </BottomBar>
+      {!loading && (
+        <BottomBar>
+          <TodoQuickCreateForm onCreated={(t) => setTodos((prev) => [t, ...prev])} />
+        </BottomBar>
+      )}
     </Container>
   );
 };

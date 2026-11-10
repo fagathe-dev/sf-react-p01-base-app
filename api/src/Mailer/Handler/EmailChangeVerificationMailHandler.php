@@ -2,17 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Mailer;
+namespace App\Mailer\Handler;
 
 use App\Dto\Mail\EmailChangeVerificationMailDto;
+use App\Mailer\MailHandlerInterface;
 use Fagathe\CorePhp\Mailer\AbstractMailerHandler;
 use Symfony\Component\Mime\Address;
 
 /**
  * @extends AbstractMailerHandler<EmailChangeVerificationMailDto>
  */
-final class EmailChangeVerificationMailHandler extends AbstractMailerHandler
+final class EmailChangeVerificationMailHandler extends AbstractMailerHandler implements MailHandlerInterface
 {
+    public static function getDtoClass(): string
+    {
+        return EmailChangeVerificationMailDto::class;
+    }
+
     protected function getTemplate(): string
     {
         return 'emails/auth/email_change_verification.html.twig';

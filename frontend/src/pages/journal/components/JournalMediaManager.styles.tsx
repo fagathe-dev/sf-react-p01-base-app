@@ -8,22 +8,6 @@ export const Container = styled.div`
   border-top: 1px dashed ${({ theme }) => theme.colors.border.default};
 `;
 
-export const DropZone = styled.div<{ $isDragOver: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  border: 1px dashed
-    ${({ $isDragOver, theme }) => ($isDragOver ? theme.colors.primary.base : theme.colors.border.default)};
-  border-radius: 8px;
-  background-color: ${({ $isDragOver }) => ($isDragOver ? 'rgba(37, 99, 235, 0.05)' : 'rgba(0, 0, 0, 0.015)')};
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.text.muted};
-  cursor: pointer;
-  transition: all 0.15s ease;
-`;
-
 export const PreviewsGrid = styled.div`
   display: flex;
   flex-wrap: wrap;

@@ -6,3 +6,4 @@ export * from './ChangePasswordForm';
 export * from './CodeLoginForm';
 export * from './DeleteAccountCard';
 export * from './PasswordLoginForm';
+export * from './ProfileSkeleton';

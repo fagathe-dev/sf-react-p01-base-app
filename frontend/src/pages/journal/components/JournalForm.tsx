@@ -5,9 +5,8 @@ import { ColorEnum, Tag } from '@/types/tag.types';
 import { Button } from '@/ui/components';
 import { Icon } from '@/ui/components';
 import { Alert } from '@/ui/components';
-import { TabContent, TabList, Tabs, TabTrigger } from '@/ui/components';
-import { convertMarkdownToHtml } from 'core-ts';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MarkdownEditor } from '@/ui/components';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { JournalColorPicker } from './JournalColorPicker';
 import * as S from './JournalForm.styles';
 import { JournalLocationTrigger } from './JournalLocationTrigger';
@@ -67,8 +66,8 @@ export const JournalForm: React.FC<JournalFormProps> = ({
     }
   }, []);
 
-  // Support du Collage (Paste) de médias directement dans le textarea en mode édition
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  // Collage de médias dans l'éditeur en mode modification (l'événement remonte du textarea de MarkdownEditor)
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     if (!isEdit || !e.clipboardData?.files?.length) return;
     const files = Array.from(e.clipboardData.files);
     const hasMedia = files.some((f) => ['image/', 'video/', 'audio/'].some((t) => f.type.startsWith(t)));
@@ -78,7 +77,12 @@ export const JournalForm: React.FC<JournalFormProps> = ({
     }
   };
 
-  const previewHtml = useMemo(() => convertMarkdownToHtml(content), [content]);
+  // Glisser-déposer de médias sur l'éditeur en mode modification (sans bandeau dédié)
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isEdit || !e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    handleAddFiles(Array.from(e.dataTransfer.files));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,29 +124,16 @@ export const JournalForm: React.FC<JournalFormProps> = ({
         </button>
       </S.TopBar>
 
-      <Tabs defaultValue="write">
-        <TabList style={{ padding: '0 20px' }}>
-          <TabTrigger value="write">Écrire</TabTrigger>
-          <TabTrigger value="preview">Aperçu</TabTrigger>
-        </TabList>
-
-        <TabContent value="write" style={{ paddingTop: 0 }}>
-          <S.TextArea
-            placeholder="Rédige tes pensées en Markdown…"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onPaste={handlePaste}
-          />
-        </TabContent>
-
-        <TabContent value="preview" style={{ paddingTop: 0 }}>
-          <S.Preview
-            dangerouslySetInnerHTML={{
-              __html: previewHtml || '<p style="color:#888">Rien à prévisualiser…</p>',
-            }}
-          />
-        </TabContent>
-      </Tabs>
+      {/* Éditeur Markdown de core-react : barre d'outils, raccourcis et onglets Écrire / Aperçu */}
+      <S.EditorArea onPaste={handlePaste} onDrop={handleDrop}>
+        <MarkdownEditor
+          aria-label="Contenu de l'entrée"
+          placeholder="Rédige tes pensées en Markdown…"
+          value={content}
+          onChange={setContent}
+          rows={12}
+        />
+      </S.EditorArea>
 
       {isEdit && (
         <>
@@ -161,13 +152,11 @@ export const JournalForm: React.FC<JournalFormProps> = ({
             existingMedias={existingMedias}
             pendingFiles={pendingFiles}
             errors={mediaErrors}
-            onAddFiles={handleAddFiles}
             onRemovePending={(idx) => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
             onRemoveExisting={(id) => {
               setExistingMedias((prev) => prev.filter((m) => m.id !== id));
               setDeletedMedias((prev) => [...prev, id]);
             }}
-            onTriggerInput={() => fileInputRef.current?.click()}
           />
         </>
       )}
@@ -184,7 +173,6 @@ export const JournalForm: React.FC<JournalFormProps> = ({
         <S.ToolGroup>
           <S.ToolSquareBtn
             type="button"
-            $active={Boolean(currentMoodMeta)}
             onClick={() => setShowMoodModal(true)}
             title={currentMoodMeta ? `Humeur : ${currentMoodMeta.label}` : 'Choisir une humeur'}
           >

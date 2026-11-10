@@ -171,7 +171,14 @@ export const LocationBadge = styled.div`
   }
 `;
 
-export const PinBtn = styled.button<{ $pinned: boolean }>`
+export const Actions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+// Bouton d'action discret (épingler, modifier) : visible au survol de la carte, toujours visible si actif
+export const ActionBtn = styled.button<{ $active?: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -180,8 +187,8 @@ export const PinBtn = styled.button<{ $pinned: boolean }>`
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
-  color: ${({ $pinned, theme }) => ($pinned ? theme.colors.primary.base : theme.colors.text.muted)};
-  opacity: ${({ $pinned }) => ($pinned ? 1 : 0)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.primary.base : theme.colors.text.muted)};
+  opacity: ${({ $active }) => ($active ? 1 : 0)};
   transition:
     opacity 0.15s ease,
     background-color 0.15s ease;

@@ -56,12 +56,23 @@ export const JournalCard: React.FC<{
           )}
         </S.HeaderLeft>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <S.Actions>
           {moodMeta && <S.MoodBadge title={moodMeta.label}>{moodMeta.emoji}</S.MoodBadge>}
+          <S.ActionBtn
+            type="button"
+            title="Modifier"
+            onClick={(e) => {
+              // Accès direct à l'édition, sans passer par la page de détail
+              e.stopPropagation();
+              navigate(`/journal/${entry.id}/edit`, { state: { from: '/journal' } });
+            }}
+          >
+            <Icon name="pencil-outline" size={16} />
+          </S.ActionBtn>
           {onTogglePin && (
-            <S.PinBtn
+            <S.ActionBtn
               type="button"
-              $pinned={isPinned}
+              $active={isPinned}
               title={isPinned ? 'Détacher' : 'Épingler'}
               onClick={(e) => {
                 // Évite de déclencher la navigation de la carte
@@ -70,9 +81,9 @@ export const JournalCard: React.FC<{
               }}
             >
               <Icon name={isPinned ? 'pin' : 'pin-outline'} size={16} />
-            </S.PinBtn>
+            </S.ActionBtn>
           )}
-        </div>
+        </S.Actions>
       </S.Header>
 
       {visibleMedias.length > 0 && (

@@ -13,6 +13,7 @@ use App\Dto\Mail\EmailChangeVerificationMailDto;
 use App\Entity\AbstractFile;
 use App\Entity\User;
 use App\Enum\Auth\UserRequestTypeEnum;
+use App\Mailer\MailDispatcher;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Fagathe\CorePhp\Enum\LoggerLevelEnum;
@@ -40,6 +41,9 @@ final class AccountService
     use ResponseTrait, DatetimeTrait, LoggerTrait, RequestTrait, FileTrait;
 
     /** Suppression de compte : validité du code, essais autorisés, délai entre deux envois */
+    /** Validité du lien de confirmation d'un changement d'e-mail */
+    public const EMAIL_CHANGE_TTL_HOURS = 24;
+
     public const DELETION_CODE_TTL_MINUTES = 10;
     public const DELETION_CODE_MAX_ATTEMPTS = 5;
     public const DELETION_CODE_RESEND_DELAY_SECONDS = 30;
@@ -54,7 +58,7 @@ final class AccountService
         private readonly UploaderService $uploader,
         private readonly UserRequestService $userRequestService,
         private readonly SecretDecoder $secretDecoder,
-        private readonly EmailDispatcherService $emailDispatcher,
+        private readonly MailDispatcher $mailDispatcher,
         private readonly CacheItemPoolInterface $cache,
         private readonly ?string $defaultUri = null,
         #[Autowire('%env(default::FRONTEND_URL)%')]
@@ -195,7 +199,7 @@ final class AccountService
         $userRequest = $this->userRequestService->createRequest(
             user: $user,
             type: UserRequestTypeEnum::EmailChange,
-            ttlMinutes: 1440,
+            ttlMinutes: self::EMAIL_CHANGE_TTL_HOURS * 60,
             isOtp: false,
             payload: ['new_email' => $cleanEmail]
         );
@@ -214,11 +218,11 @@ final class AccountService
         );
 
         try {
-            $this->emailDispatcher->dispatch(new EmailChangeVerificationMailDto(
+            $this->mailDispatcher->dispatch(new EmailChangeVerificationMailDto(
                 newEmail: $cleanEmail,
                 recipientName: $this->resolveRecipientName($user),
                 confirmationUrl: $confirmationUrl,
-                ttlHours: 24,
+                ttlHours: self::EMAIL_CHANGE_TTL_HOURS,
             ));
         } catch (RecipientUnreachableException) {
             return $this->sendJson(
@@ -553,7 +557,7 @@ final class AccountService
         }
 
         try {
-            $this->emailDispatcher->dispatch(new AccountDeletionCodeMailDto(
+            $this->mailDispatcher->dispatch(new AccountDeletionCodeMailDto(
                 recipientEmail: (string) $user->getEmail(),
                 recipientName: $this->resolveRecipientName($user),
                 code: $deletionRequest->getCode(),
