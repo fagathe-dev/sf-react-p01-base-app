@@ -77,7 +77,7 @@ Passage d'une base existante (ancien journal par blocs + module Notes) au nouvea
 
 Après les trois scripts, `doctrine:schema:validate` est vert. Vérifier le contrôle d'intégrité de l'étape 3 **avant** sa section de purge. Les fichiers des médias migrés restent dans `uploads/entries/…`, ceux des notes dans `uploads/notes/…` (à supprimer à la main si souhaité).
 
-> Les versions d'origine de ces scripts sont conservées dans `tmp/` à la racine pour comparaison ; elles échouent dès qu'un tag est utilisé par plusieurs entrées (`SELECT DISTINCT … UUID()`), tronquent les contenus longs et ignorent `entry.content`.
+> Les mêmes scripts sont aussi dans `tmp/` à la racine (copie de travail, non versionnée). Ils ont été validés sur le schéma de prod (`tmp/model_donnees_source.sql`) sous MySQL 8.4 et MariaDB 11.4. Après exécution, marquer la migration Doctrine complète comme jouée : `php bin/console doctrine:migrations:version 'DoctrineMigrations\Version20261122093344' --add --no-interaction`.
 
 ## 4. Hébergement & déploiement
 
