@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Throwable;
 
@@ -45,17 +46,30 @@ final class TodoService
         return $this->repository->findOneBy(['id' => $id]);
     }
 
-    public function listTodos(): object
+    /**
+     * GET /api/todos, filtrable par ?tagId=<uuid>.
+     */
+    public function listTodos(Request $request): object
     {
         $user = $this->getAuthenticatedUser();
         if (!$user) {
             return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
         }
 
+        $todos = $user->getTodos();
+
+        $tagId = $request->query->getString('tagId');
+        if ($tagId !== '') {
+            if (!Uuid::isValid($tagId)) {
+                return $this->sendJson(['message' => 'Identifiant de tag invalide.'], Response::HTTP_BAD_REQUEST);
+            }
+            $todos = $todos->filter(static fn(Todo $todo): bool => (string) $todo->getTag()?->getId() === $tagId);
+        }
+
         return $this->sendJson(
-            $user->getTodos(),
+            array_values($todos->toArray()),
             Response::HTTP_OK,
-            context: ['groups' => ['todo.list', 'user.read']]
+            context: ['groups' => ['todo.list', 'file.read', 'user.read']]
         );
     }
 
@@ -89,7 +103,7 @@ final class TodoService
             return $this->sendJson(
                 $todo,
                 Response::HTTP_CREATED,
-                context: ['groups' => ['todo.read', 'user.read']]
+                context: ['groups' => ['todo.read', 'file.read', 'user.read']]
             );
         } catch (Throwable $e) {
             $this->generateLog(
@@ -167,7 +181,7 @@ final class TodoService
         try {
             $this->repository->save($todo, flush: true, isCreation: false);
 
-            return $this->sendJson($todo, Response::HTTP_OK, context: ['groups' => ['todo.read', 'file.read']]);
+            return $this->sendJson($todo, Response::HTTP_OK, context: ['groups' => ['todo.read', 'file.read', 'user.read']]);
         } catch (Throwable $e) {
             $this->generateLog(
                 LoggerLevelEnum::Critical,

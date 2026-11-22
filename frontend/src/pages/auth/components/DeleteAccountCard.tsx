@@ -1,16 +1,12 @@
 import { getErrorMessage } from '@/services/apiError';
 import { deleteAccount, requestAccountDeletion } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { TextField } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { Alert, Button, Card, ConfirmDialog, Flex, Text, TextField, Title } from 'core-react/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { z } from 'zod';
 import { loginCodeSchema } from '../authSchemas';
 
@@ -23,33 +19,24 @@ interface PendingCode {
   resendAt: number;
 }
 
-const DangerCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 24px;
-  border: 1px solid #fecaca;
-  background-color: #fef2f2;
-  border-radius: ${({ theme }) => theme.radii.base};
-  max-width: 640px;
+const DangerCard = styled(Card)`
+  border-color: ${({ theme }) => theme.colors.danger.base};
 `;
 
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+const DangerHeader = styled(Card.Header)`
   flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing[4]};
+  background-color: ${({ theme }) => theme.colors.danger.subtle};
 `;
 
-const Actions = styled.div`
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+const Heading = styled(Title)`
+  margin-bottom: ${({ theme }) => theme.spacing[1]};
 `;
 
-const DANGER_BUTTON_STYLE = { backgroundColor: '#dc2626', color: '#fff', border: 'none' };
+const Intro = styled.div`
+  flex: 1;
+  min-width: 16rem;
+`;
 
 const formatDuration = (seconds: number): string =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -110,11 +97,11 @@ export const DeleteAccountCard = () => {
     }
   };
 
-  const handleStart = () => {
-    const confirmed = window.confirm(
-      'Attention : la suppression de votre compte est définitive. Toutes vos notes, tâches, entrées de journal et fichiers seront supprimés. Recevoir un code de confirmation par e-mail ?'
-    );
-    if (confirmed) sendCode();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const handleConfirmStart = () => {
+    setIsConfirmOpen(false);
+    sendCode();
   };
 
   const handleCancel = () => {
@@ -140,76 +127,85 @@ export const DeleteAccountCard = () => {
 
   return (
     <DangerCard>
-      <Header>
-        <div style={{ maxWidth: 420 }}>
-          <Title as="h4" style={{ margin: 0, color: '#991b1b' }}>
+      <DangerHeader>
+        <Intro>
+          <Heading as="h3" $color="danger">
             Supprimer définitivement le compte
-          </Title>
-          <Text size="xs" style={{ color: '#b91c1c', marginTop: 4 }}>
-            Cette action est irréversible et supprimera toutes vos données ainsi que vos fichiers stockés sur le
-            serveur. Un code de confirmation vous sera envoyé par e-mail.
+          </Heading>
+          <Text $size="sm" $color="muted">
+            Cette action est irréversible : vos tâches, votre journal et tous vos fichiers seront supprimés du serveur.
+            Un code de confirmation vous sera envoyé par e-mail.
           </Text>
-        </div>
+        </Intro>
 
         {!pending && (
-          <Button type="button" loading={isRequesting} onClick={handleStart} style={DANGER_BUTTON_STYLE}>
+          <Button type="button" $variant="danger" $loading={isRequesting} onClick={() => setIsConfirmOpen(true)}>
             Supprimer mon compte
           </Button>
         )}
-      </Header>
+      </DangerHeader>
 
-      {apiError && <Alert variant="danger">{apiError}</Alert>}
+      {(apiError || pending) && (
+        <Card.Body>
+          <Flex $direction="column" $gap="1rem">
+            {apiError && <Alert variant="danger">{apiError}</Alert>}
 
-      {pending && (
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          {!apiError &&
-            (expiresIn === 0 ? (
-              <Alert variant="warning">Le code a expiré. Demandez-en un nouveau.</Alert>
-            ) : (
-              info && <Alert variant="info">{info}</Alert>
-            ))}
+            {pending && (
+              <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                <Flex $direction="column" $gap="0.75rem">
+                  {!apiError &&
+                    (expiresIn === 0 ? (
+                      <Alert variant="warning">Le code a expiré. Demandez-en un nouveau.</Alert>
+                    ) : (
+                      info && <Alert variant="info">{info}</Alert>
+                    ))}
 
-          <div style={{ marginTop: 12 }}>
-            <TextField
-              label="Code de confirmation"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="123456"
-              hint={expiresIn > 0 ? `Expire dans ${formatDuration(expiresIn)}` : undefined}
-              error={errors.code?.message}
-              {...register('code')}
-            />
-          </div>
+                  <TextField
+                    label="Code de confirmation"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="123456"
+                    hint={expiresIn > 0 ? `Expire dans ${formatDuration(expiresIn)}` : undefined}
+                    error={errors.code?.message}
+                    {...register('code')}
+                  />
 
-          <Button
-            type="submit"
-            loading={isSubmitting}
-            disabled={expiresIn === 0}
-            fullWidth
-            style={DANGER_BUTTON_STYLE}
-          >
-            Confirmer la suppression définitive
-          </Button>
+                  <Button type="submit" $variant="danger" $loading={isSubmitting} disabled={expiresIn === 0} $fullWidth>
+                    Confirmer la suppression définitive
+                  </Button>
 
-          <Actions style={{ marginTop: 12 }}>
-            <Button type="button" variant="ghost" size="sm" onClick={handleCancel}>
-              Annuler
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              loading={isRequesting}
-              disabled={resendIn > 0 || isRequesting}
-              onClick={sendCode}
-            >
-              {resendIn > 0 ? `Renvoyer le code (${resendIn}s)` : 'Renvoyer le code'}
-            </Button>
-          </Actions>
-        </form>
+                  <Flex $justify="space-between" $wrap="wrap" $gap="0.5rem">
+                    <Button type="button" $variant="ghost" $size="sm" onClick={handleCancel}>
+                      Annuler
+                    </Button>
+                    <Button
+                      type="button"
+                      $variant="ghost"
+                      $size="sm"
+                      $loading={isRequesting}
+                      disabled={resendIn > 0 || isRequesting}
+                      onClick={sendCode}
+                    >
+                      {resendIn > 0 ? `Renvoyer le code (${resendIn}s)` : 'Renvoyer le code'}
+                    </Button>
+                  </Flex>
+                </Flex>
+              </form>
+            )}
+          </Flex>
+        </Card.Body>
       )}
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmStart}
+        title="Supprimer votre compte ?"
+        message="La suppression est définitive : vos tâches, votre journal et vos fichiers seront supprimés. Un code de confirmation va vous être envoyé par e-mail."
+        confirmLabel="Recevoir le code"
+      />
     </DangerCard>
   );
 };

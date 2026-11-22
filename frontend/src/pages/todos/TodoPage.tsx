@@ -1,169 +1,42 @@
-// src/pages/todos/TodoPage.tsx
-import { deleteTodo, fetchTodos } from '@/services/todo.api';
-import { Todo } from '@/types/todo.types';
-import { Icon } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
-import { DueDateCategory, isoToDueDateCategory } from '@/utils/dueDate.resolver';
-import React, { useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
-import { TodoEditForm, TodoList, TodoListSkeleton, TodoQuickCreateForm } from './components';
+import { PageHeader } from '@/components/PageHeader';
+import { TagManager } from '@/pages/tags';
+import { SegmentedControl } from 'core-react/ui';
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { TodoBoard } from './components';
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-inline: auto;
-  min-height: calc(100vh - 120px);
-  width: 100%;
-  max-width: 924px;
-  gap: ${({ theme }) => theme.spacing[4]};
-`;
+type TodoTab = 'day' | 'tags';
 
-const PageHeader = styled.header`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing[0.5]};
-`;
-
-const BottomBar = styled.div`
-  position: sticky;
-  bottom: ${({ theme }) => theme.spacing[4]};
-  margin-top: auto;
-  padding-top: ${({ theme }) => theme.spacing[2]};
-  background: linear-gradient(to top, ${({ theme }) => theme.colors.background.body} 75%, transparent);
-`;
-
-// Ordre requis : En retard -> Échéances proches -> Sans échéance (juste avant terminées)
-const SECTIONS: Array<{ key: DueDateCategory; label: string; icon: string }> = [
-  { key: 'overdue', label: 'En retard', icon: 'alert-circle' },
-  { key: 'today', label: 'Aujourd’hui', icon: 'calendar-today' },
-  { key: 'tomorrow', label: 'Demain', icon: 'calendar-arrow-right' },
-  { key: 'this_week', label: 'Cette semaine', icon: 'calendar-week' },
-  { key: 'later', label: 'Plus tard', icon: 'calendar-clock' },
-  { key: 'none', label: 'Sans échéance', icon: 'inbox' },
+const TABS: Array<{ value: TodoTab; label: string; icon: string }> = [
+  { value: 'day', label: 'Ma journée', icon: 'format-list-checks' },
+  { value: 'tags', label: 'Tags', icon: 'tag-outline' },
 ];
 
+const formatToday = (): string => {
+  const label = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+/**
+ * Module Tâches : onglet « Ma journée » (liste des tâches) et onglet « Tags » (gestion des tags des tâches).
+ * L'onglet courant est porté par l'URL (/todos?tab=tags) pour pouvoir y revenir ou le partager.
+ */
 export const TodoPage: React.FC = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: TodoTab = searchParams.get('tab') === 'tags' ? 'tags' : 'day';
 
-  useEffect(() => {
-    fetchTodos()
-      .then(setTodos)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleUpdate = (t: Todo) => {
-    setTodos((prev) => prev.map((item) => (item.id === t.id ? t : item)));
-    if (selectedTodo?.id === t.id) setSelectedTodo(t);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Supprimer cette tâche ?')) return;
-    await deleteTodo(id);
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-    if (selectedTodo?.id === id) setSelectedTodo(null);
-  };
-
-  // Typage sécurisé contre ts(2532)
-  const grouped = useMemo(() => {
-    const map: Record<DueDateCategory | 'done', Todo[]> = {
-      overdue: [],
-      today: [],
-      tomorrow: [],
-      this_week: [],
-      later: [],
-      none: [],
-      done: [],
-    };
-
-    todos.forEach((t) => {
-      if (t.isDone) {
-        map.done.push(t);
-      } else {
-        const cat = isoToDueDateCategory(t.dueDate);
-        const target = map[cat];
-        if (target) {
-          target.push(t);
-        } else {
-          map.none.push(t);
-        }
-      }
-    });
-
-    return map;
-  }, [todos]);
-
-  const todayFormatted = new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date());
-
-  const doneList = grouped.done ?? [];
+  const changeTab = (next: TodoTab) => setSearchParams(next === 'day' ? {} : { tab: next }, { replace: true });
 
   return (
-    <Container>
-      <PageHeader>
-        <Title as="h2">Ma journée</Title>
-        <Text size="xs" color="muted" style={{ textTransform: 'capitalize' }}>
-          {todayFormatted}
-        </Text>
-      </PageHeader>
+    <>
+      <PageHeader
+        title="Tâches"
+        description={tab === 'day' ? formatToday() : 'Les étiquettes qui servent à classer et filtrer vos tâches.'}
+        icon="format-list-checks"
+        actions={<SegmentedControl aria-label="Vue des tâches" options={TABS} value={tab} onChange={changeTab} />}
+      />
 
-      {loading && <TodoListSkeleton />}
-
-      {/* Sections actives ordonnées */}
-      {!loading && SECTIONS.map(({ key, label, icon }) => {
-        const list = grouped[key] ?? [];
-        if (key !== 'none' && list.length === 0) return null;
-
-        return (
-          <div key={key}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                marginBottom: 8,
-              }}
-            >
-              <Icon name={icon} size={15} color="#888" />
-              <Text size="xs" weight="semibold" color="muted">
-                {label} ({list.length})
-              </Text>
-            </div>
-            <TodoList todos={list} onTodoUpdated={handleUpdate} onSelectTodo={setSelectedTodo} />
-          </div>
-        );
-      })}
-
-      {/* Tâches terminées tout en bas */}
-      {!loading && doneList.length > 0 && (
-        <div>
-          <Text size="xs" weight="semibold" color="muted" style={{ margin: '14px 0 8px' }}>
-            Terminées ({doneList.length})
-          </Text>
-          <TodoList todos={doneList} onTodoUpdated={handleUpdate} onSelectTodo={setSelectedTodo} />
-        </div>
-      )}
-
-      {/* Volet latéral d'édition au clic */}
-      {selectedTodo && (
-        <TodoEditForm
-          todo={selectedTodo}
-          onClose={() => setSelectedTodo(null)}
-          onUpdated={handleUpdate}
-          onDelete={handleDelete}
-        />
-      )}
-
-      {!loading && (
-        <BottomBar>
-          <TodoQuickCreateForm onCreated={(t) => setTodos((prev) => [t, ...prev])} />
-        </BottomBar>
-      )}
-    </Container>
+      {tab === 'day' ? <TodoBoard /> : <TagManager />}
+    </>
   );
 };

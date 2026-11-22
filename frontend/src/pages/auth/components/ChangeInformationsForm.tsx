@@ -1,9 +1,9 @@
+import { SettingsCard } from '@/components/SettingsCard';
 import { updateProfile } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { Alert, Button, TextField } from 'core-react/ui';
 import React, { useState } from 'react';
-import * as S from './ProfileForms.styles';
+import { FieldGrid } from './ProfileForms.styles';
 
 export const ChangeInformationsForm: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -40,54 +40,25 @@ export const ChangeInformationsForm: React.FC = () => {
   };
 
   return (
-    <S.FormCard onSubmit={handleSubmit}>
-      <Title as="h4" style={{ margin: 0 }}>
-        Informations personnelles
-      </Title>
-
-      {feedback && <S.FeedbackMsg $type={feedback.type}>{feedback.message}</S.FeedbackMsg>}
-
-      <S.FieldGroup>
-        <S.Label htmlFor="profile-username">Nom d'utilisateur *</S.Label>
-        <S.Input
-          id="profile-username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-          minLength={3}
-          maxLength={90}
-        />
-      </S.FieldGroup>
-
-      <S.FieldGrid>
-        <S.FieldGroup>
-          <S.Label htmlFor="profile-firstname">Prénom</S.Label>
-          <S.Input
-            id="profile-firstname"
-            value={firstname}
-            onChange={(e) => setFirstname(e.target.value)}
-            placeholder="Votre prénom"
-            maxLength={80}
-          />
-        </S.FieldGroup>
-
-        <S.FieldGroup>
-          <S.Label htmlFor="profile-lastname">Nom</S.Label>
-          <S.Input
-            id="profile-lastname"
-            value={lastname}
-            onChange={(e) => setLastname(e.target.value)}
-            placeholder="Votre nom"
-            maxLength={80}
-          />
-        </S.FieldGroup>
-      </S.FieldGrid>
-
-      <S.ActionsRow>
-        <Button type="submit" loading={loading} disabled={!username.trim()}>
+    <SettingsCard
+      title="Informations personnelles"
+      description="Votre nom d'utilisateur sert aussi d'identifiant de connexion."
+      onSubmit={handleSubmit}
+      actions={
+        <Button type="submit" $loading={loading} disabled={!username.trim()}>
           Enregistrer les modifications
         </Button>
-      </S.ActionsRow>
-    </S.FormCard>
+      }
+    >
+      {feedback && <Alert variant={feedback.type === 'success' ? 'success' : 'danger'}>{feedback.message}</Alert>}
+
+      <TextField id="profile-username" label="Nom d'utilisateur" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={90} />
+
+      <FieldGrid>
+        <TextField id="profile-firstname" label="Prénom" value={firstname} onChange={(e) => setFirstname(e.target.value)} placeholder="Votre prénom" maxLength={80} />
+
+        <TextField id="profile-lastname" label="Nom" value={lastname} onChange={(e) => setLastname(e.target.value)} placeholder="Votre nom" maxLength={80} />
+      </FieldGrid>
+    </SettingsCard>
   );
 };

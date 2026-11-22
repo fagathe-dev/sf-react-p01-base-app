@@ -1,11 +1,12 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/auth.store';
-import { Avatar, Badge, Icon } from '@/ui/components';
-import { Image } from '@/ui/components';
-import { Container } from '@/ui/components';
 import {
+  Avatar,
+  Badge,
+  Container,
+  Flex,
+  Icon,
   Navbar,
-  NavbarBrand,
   NavbarDropdown,
   NavbarDropdownDivider,
   NavbarDropdownItem,
@@ -20,29 +21,25 @@ import {
   SidebarProvider,
   SidebarSection,
   SidebarToggle,
-} from '@/ui/components';
-import { ThemeModeSwitcher } from '@/ui/components';
-import { Text } from '@/ui/components';
+  Text,
+  ThemeModeSwitcher,
+} from 'core-react/ui';
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
-// ---------------------------------------------------------------------------
-// Styles du Layout Dashboard
-// ---------------------------------------------------------------------------
-
-const DashboardRoot = styled.div`
+const Root = styled.div`
   display: flex;
   height: 100vh;
   width: 100%;
-  background-color: ${({ theme }) => theme.colors.background.body};
   overflow: hidden;
+  background-color: ${({ theme }) => theme.colors.background.body};
 `;
 
 const ContentArea = styled.div`
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
   height: 100vh;
   overflow: hidden;
@@ -50,79 +47,51 @@ const ContentArea = styled.div`
 
 const ScrollArea = styled.main`
   flex: 1;
-  width: 100%;
   min-height: 0;
   overflow-y: auto;
-  box-sizing: border-box;
-
-  /* Défilement fluide et discret */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: ${({ theme }) => theme.colors.border.default};
-    border-radius: ${({ theme }) => theme.radii.full};
-  }
 `;
 
-const MainContent = styled(Container)`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding-top: ${({ theme }) => theme.spacing[4]};
-  padding-bottom: ${({ theme }) => theme.spacing[6]};
+const Page = styled(Container)`
+  max-width: 72rem;
+  padding-top: ${({ theme }) => theme.spacing[6]};
+  padding-bottom: ${({ theme }) => theme.spacing[7]};
 `;
 
-const BrandLink = styled(Link)`
+const Brand = styled(Link)`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
+  gap: ${({ theme }) => theme.spacing[2.5]};
+  color: ${({ theme }) => theme.colors.text.heading};
   text-decoration: none;
-  color: inherit;
 `;
 
-const AvatarToggle = styled(NavbarDropdownToggle)`
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: ${({ theme }) => theme.radii.full};
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.15s ease;
-
-  &:hover {
-    background: transparent;
-    opacity: 0.85;
-  }
+const BrandMark = styled.img`
+  width: 2rem;
+  height: 2rem;
+  border-radius: ${({ theme }) => theme.radii.sm};
 `;
 
-const MenuActionContent = styled.div`
+const NavbarEnd = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
   gap: ${({ theme }) => theme.spacing[3]};
+  margin-left: auto;
 `;
 
-// Assez large pour afficher les trois segments du sélecteur de thème
+const AccountToggle = styled(NavbarDropdownToggle)`
+  padding: 0;
+  border-radius: ${({ theme }) => theme.radii.full};
+`;
+
 const AccountMenu = styled(NavbarDropdownMenu)`
   min-width: 18rem;
 `;
 
-const ThemeSetting = styled.div`
+const MenuPanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing[2]};
   padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
-`;
-
-const UserProfilePreview = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing[2.5]};
-  overflow: hidden;
 `;
 
 const UserMeta = styled.div`
@@ -131,22 +100,11 @@ const UserMeta = styled.div`
   min-width: 0;
 `;
 
-const RoleBadge = styled(Badge)`
-  align-self: flex-start;
-  margin-top: ${({ theme }) => theme.spacing[1]};
+const Ellipsis = styled(Text)`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
-
-const AccountSummary = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing[3]};
-  padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
-`;
-
-// ---------------------------------------------------------------------------
-// Configuration des menus de la Sidebar
-// ---------------------------------------------------------------------------
 
 interface NavModule {
   label: string;
@@ -154,16 +112,9 @@ interface NavModule {
   icon: string;
 }
 
-const PRIMARY_MODULES: NavModule[] = [
+const WORKSPACE_MODULES: NavModule[] = [
   { label: 'Tâches', path: '/todos', icon: 'format-list-checks' },
-  { label: 'Notes', path: '/notes', icon: 'note-text-outline' },
-  { label: 'Journal', path: '/journal', icon: 'book-lock-outline' },
-  { label: 'Tags', path: '/tags', icon: 'tag-outline' },
-];
-
-const ARCHIVE_MODULES: NavModule[] = [
-  { label: 'Archives', path: '/archives', icon: 'archive-outline' },
-  { label: 'Corbeille', path: '/trash', icon: 'trash-can-outline' },
+  { label: 'Journal', path: '/journal', icon: 'book-open-outline' },
 ];
 
 const ADMIN_MODULES: NavModule[] = [
@@ -171,194 +122,128 @@ const ADMIN_MODULES: NavModule[] = [
   { label: 'Logs', path: '/admin/logs', icon: 'text-box-search-outline' },
 ];
 
-// ---------------------------------------------------------------------------
-// Composant AppLayout
-// ---------------------------------------------------------------------------
+const NavGroup: React.FC<{ title: string; modules: NavModule[]; isActive: (path: string) => boolean }> = ({
+  title,
+  modules,
+  isActive,
+}) => (
+  <>
+    <SidebarSection>{title}</SidebarSection>
+    {modules.map(({ label, path, icon }) => {
+      const active = isActive(path);
+      return (
+        <SidebarItem key={path}>
+          <SidebarLink
+            href={path}
+            active={active}
+            icon={<Icon name={icon} size={18} />}
+            aria-current={active ? 'page' : undefined}
+          >
+            {label}
+          </SidebarLink>
+        </SidebarItem>
+      );
+    })}
+  </>
+);
 
 export const AppLayout: React.FC = () => {
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const { isAdmin, roleLabel } = useAuth();
-  const location = useLocation();
+  const { pathname } = useLocation();
 
-  const isCurrentPath = (path: string) =>
-    location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
+  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+  const displayName = user?.username ?? 'Utilisateur';
+  const roleBadge = (
+    <Badge $variant={isAdmin ? 'primary' : 'neutral'} $pill>
+      {roleLabel}
+    </Badge>
+  );
 
   return (
     <SidebarProvider breakpoint="md">
-      <DashboardRoot>
-        {/* ================================================================= */}
-        {/* SIDEBAR : Reste fixe à gauche, avec son propre scroll interne     */}
-        {/* ================================================================= */}
-        <Sidebar width="260px" breakpoint="md">
+      <Root>
+        <Sidebar width="16rem" breakpoint="md">
           <SidebarHeader>
-            <BrandLink to="/todos">
-              <Image
-                src="/images/logo.webp"
-                srcSet="/images/logo.webp"
-                width={32}
-                alt="Logo de l'application Base App"
-              />
-            </BrandLink>
+            <Brand to="/todos">
+              <BrandMark src="/images/logo.webp" alt="" />
+              <Text $weight="semibold">Mon espace</Text>
+            </Brand>
           </SidebarHeader>
 
           <SidebarNav>
-            <SidebarSection>Espaces de travail</SidebarSection>
-            {PRIMARY_MODULES.map(({ label, path, icon }) => {
-              const active = isCurrentPath(path);
-              return (
-                <SidebarItem key={path}>
-                  <SidebarLink
-                    as={Link}
-                    to={path}
-                    active={active}
-                    icon={<Icon name={icon} size={18} />}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    {label}
-                  </SidebarLink>
-                </SidebarItem>
-              );
-            })}
-
-            <SidebarSection>Système</SidebarSection>
-            {ARCHIVE_MODULES.map(({ label, path, icon }) => {
-              const active = isCurrentPath(path);
-              return (
-                <SidebarItem key={path}>
-                  <SidebarLink
-                    as={Link}
-                    to={path}
-                    active={active}
-                    icon={<Icon name={icon} size={18} />}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    {label}
-                  </SidebarLink>
-                </SidebarItem>
-              );
-            })}
-
-            {isAdmin && (
-              <>
-                <SidebarSection>Administration</SidebarSection>
-                {ADMIN_MODULES.map(({ label, path, icon }) => {
-                  const active = isCurrentPath(path);
-                  return (
-                    <SidebarItem key={path}>
-                      <SidebarLink
-                        as={Link}
-                        to={path}
-                        active={active}
-                        icon={<Icon name={icon} size={18} />}
-                        aria-current={active ? 'page' : undefined}
-                      >
-                        {label}
-                      </SidebarLink>
-                    </SidebarItem>
-                  );
-                })}
-              </>
-            )}
+            <NavGroup title="Espaces de travail" modules={WORKSPACE_MODULES} isActive={isActive} />
+            {isAdmin && <NavGroup title="Administration" modules={ADMIN_MODULES} isActive={isActive} />}
           </SidebarNav>
 
           <SidebarFooter>
-            <UserProfilePreview>
-              <Avatar name={user?.username ?? 'Utilisateur'} src={user?.avatar ?? undefined} size="sm" />
+            <Flex $align="center" $gap="0.625rem">
+              <Avatar name={displayName} src={user?.avatar ?? undefined} size="sm" />
               <UserMeta>
-                <Text weight="semibold" size="xs" color="tertiary">
-                  {user?.username ?? 'Utilisateur'}
-                </Text>
-                <Text size="xs" color="muted">
+                <Ellipsis $size="sm" $weight="semibold">
+                  {displayName}
+                </Ellipsis>
+                <Ellipsis $size="xs" $color="muted">
                   {user?.email ?? ''}
-                </Text>
-                <RoleBadge variant={isAdmin ? 'primary' : 'neutral'} pill>
-                  {roleLabel}
-                </RoleBadge>
+                </Ellipsis>
               </UserMeta>
-            </UserProfilePreview>
+            </Flex>
           </SidebarFooter>
         </Sidebar>
 
-        {/* ================================================================= */}
-        {/* ZONE DE CONTENU : Navbar fixe en haut, ScrollArea seule à défiler */}
-        {/* ================================================================= */}
         <ContentArea>
           <Navbar sticky breakpoint="md">
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <SidebarToggle />
-              <NavbarBrand>
-                <Text weight="medium" size="sm" color="tertiary" style={{ paddingInline: 10 }}>
-                  Mon Espace
-                </Text>
-              </NavbarBrand>
-            </div>
+            <SidebarToggle aria-label="Afficher le menu" />
 
-            {/* L'avatar est placé directement ici : visible sur toutes les résolutions */}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+            <NavbarEnd>
+              <ThemeModeSwitcher size="sm" />
               <NavbarDropdown>
-                <AvatarToggle aria-label="Menu du compte utilisateur">
-                  <Avatar name={user?.username ?? 'Utilisateur'} src={user?.avatar ?? undefined} size="base" />
-                </AvatarToggle>
+                <AccountToggle aria-label="Menu du compte">
+                  <Avatar name={displayName} src={user?.avatar ?? undefined} size="sm" />
+                </AccountToggle>
 
                 <AccountMenu align="right">
-                  <AccountSummary>
-                    <UserMeta>
-                      <Text weight="semibold" size="sm">
-                        {user?.username ?? 'Utilisateur'}
-                      </Text>
-                      <Text size="xs" color="muted">
-                        {user?.email ?? ''}
-                      </Text>
-                    </UserMeta>
-                    <Badge variant={isAdmin ? 'primary' : 'neutral'} pill>
-                      {roleLabel}
-                    </Badge>
-                  </AccountSummary>
+                  <MenuPanel>
+                    <Flex $align="center" $justify="space-between" $gap="0.75rem">
+                      <UserMeta>
+                        <Ellipsis $size="sm" $weight="semibold">
+                          {displayName}
+                        </Ellipsis>
+                        <Ellipsis $size="xs" $color="muted">
+                          {user?.email ?? ''}
+                        </Ellipsis>
+                      </UserMeta>
+                      {roleBadge}
+                    </Flex>
+                  </MenuPanel>
 
                   <NavbarDropdownDivider />
-
-                  <NavbarDropdownItem as={Link} to="/profile">
-                    <MenuActionContent>
-                      <span>Mon profil</span>
-                      <Icon name="account" size={18} />
-                    </MenuActionContent>
+                  <NavbarDropdownItem href="/profile">
+                    <Flex $align="center" $gap="0.5rem">
+                      <Icon name="account-outline" size={18} />
+                      Mon profil
+                    </Flex>
                   </NavbarDropdownItem>
-
                   <NavbarDropdownDivider />
 
-                  <ThemeSetting>
-                    <Text size="xs" weight="semibold" color="muted">
-                      Apparence
-                    </Text>
-                    <ThemeModeSwitcher fullWidth />
-                  </ThemeSetting>
-
-                  <NavbarDropdownDivider />
-
-                  <NavbarDropdownItem as={Link} to="/logout">
-                    <MenuActionContent>
-                      <span>Se déconnecter</span>
+                  <NavbarDropdownItem href="/logout">
+                    <Flex $align="center" $gap="0.5rem">
                       <Icon name="logout" size={18} />
-                    </MenuActionContent>
+                      Se déconnecter
+                    </Flex>
                   </NavbarDropdownItem>
                 </AccountMenu>
               </NavbarDropdown>
-            </div>
+            </NavbarEnd>
           </Navbar>
 
           <ScrollArea>
-            <MainContent fluid style={{ maxWidth: 1500, marginInline: 'auto' }}>
+            <Page $fluid>
               <Outlet />
-            </MainContent>
+            </Page>
           </ScrollArea>
         </ContentArea>
-      </DashboardRoot>
+      </Root>
     </SidebarProvider>
   );
 };

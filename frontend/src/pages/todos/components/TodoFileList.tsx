@@ -1,103 +1,89 @@
-import { deleteTodoFile } from '@/services/todo.api';
 import { TodoFile } from '@/types/todo.types';
 import { getFileIcon } from '@/utils';
-import { Icon } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { Button, Icon, IconButton, Link } from 'core-react/ui';
 import React, { useRef } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
-const List = styled.div`
+const List = styled.ul`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing[1.5]};
+  margin: 0 0 ${({ theme }) => theme.spacing[2]};
+  padding: 0;
+  list-style: none;
 `;
 
-const Item = styled.div`
+const Item = styled.li`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => `${theme.spacing[1.5]} ${theme.spacing[2]}`};
-  background-color: ${({ theme }) => theme.colors.background.body};
+  gap: ${({ theme }) => theme.spacing[2]};
+  padding: ${({ theme }) => `${theme.spacing[1.5]} ${theme.spacing[1.5]} ${theme.spacing[1.5]} ${theme.spacing[3]}`};
   border: 1px solid ${({ theme }) => theme.colors.border.default};
   border-radius: ${({ theme }) => theme.radii.sm};
+  background-color: ${({ theme }) => theme.colors.background.body};
 `;
 
-const UploadBtn = styled.button`
-  display: flex;
+const FileName = styled.span`
+  display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing[1.5]};
-  padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[3]}`};
-  border: 1px dashed ${({ theme }) => theme.colors.border.default};
-  background: transparent;
-  border-radius: ${({ theme }) => theme.radii.sm};
-  color: ${({ theme }) => theme.colors.text.muted};
-  cursor: pointer;
-  font-size: ${({ theme }) => theme.typography.sizes.xs};
+  gap: ${({ theme }) => theme.spacing[2]};
+  min-width: 0;
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
 
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.primary.base};
-    color: ${({ theme }) => theme.colors.primary.base};
+  a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
+const HiddenInput = styled.input`
+  display: none;
+`;
+
+/** Pièces jointes d'une tâche. La suppression est confiée au parent (un seul appel API). */
 export const TodoFileList: React.FC<{
-  todoId: string;
   files: TodoFile[];
   onUpload: (files: FileList) => void;
-  onFileDeleted: (fileId: string) => void;
-}> = ({ todoId, files, onUpload, onFileDeleted }) => {
+  onDelete: (fileId: string) => void;
+}> = ({ files, onUpload, onDelete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDelete = async (fileId: string) => {
-    try {
-      await deleteTodoFile(todoId, fileId);
-      onFileDeleted(fileId);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   return (
-    <List>
-      {files.map((file) => (
-        <Item key={file.id}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              overflow: 'hidden',
-            }}
-          >
-            <Icon name={getFileIcon(file)} size={16} title={file.type ?? undefined} />
-            <Text size="xs">{file.originalName}</Text>
-          </div>
-          <button
-            type="button"
-            onClick={() => handleDelete(file.id)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: '#888',
-            }}
-          >
-            <Icon name="trash-can-outline" size={14} />
-          </button>
-        </Item>
-      ))}
+    <div>
+      {files.length > 0 && (
+        <List>
+          {files.map((file) => (
+            <Item key={file.id}>
+              <FileName>
+                <Icon name={getFileIcon(file)} size={18} title={file.type ?? undefined} />
+                <Link href={file.filePath} target="_blank" rel="noopener noreferrer">
+                  {file.originalName}
+                </Link>
+              </FileName>
+              <IconButton
+                name="trash-can-outline"
+                variant="ghost"
+                size="sm"
+                aria-label={`Supprimer ${file.originalName}`}
+                onClick={() => onDelete(file.id)}
+              />
+            </Item>
+          ))}
+        </List>
+      )}
 
-      <input
+      <HiddenInput
         ref={fileInputRef}
         type="file"
         multiple
-        style={{ display: 'none' }}
         onChange={(e) => e.target.files && onUpload(e.target.files)}
       />
-      <UploadBtn type="button" onClick={() => fileInputRef.current?.click()}>
-        <Icon name="paperclip" size={15} />
-        <span>Ajouter un fichier</span>
-      </UploadBtn>
-    </List>
+      <Button type="button" $variant="outline" $size="sm" onClick={() => fileInputRef.current?.click()}>
+        <Icon name="paperclip" size={16} />
+        Ajouter un fichier
+      </Button>
+    </div>
   );
 };

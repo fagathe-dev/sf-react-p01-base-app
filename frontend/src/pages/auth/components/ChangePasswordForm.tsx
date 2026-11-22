@@ -1,8 +1,8 @@
+import { SettingsCard } from '@/components/SettingsCard';
 import { updatePassword } from '@/services/auth.api';
-import { Button } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { Alert, Button, TextField } from 'core-react/ui';
 import React, { useState } from 'react';
-import * as S from './ProfileForms.styles';
+import { FieldGrid } from './ProfileForms.styles';
 
 export const ChangePasswordForm: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -37,59 +37,29 @@ export const ChangePasswordForm: React.FC = () => {
   };
 
   return (
-    <S.FormCard onSubmit={handleSubmit}>
-      <Title as="h4" style={{ margin: 0 }}>
-        Modifier le mot de passe
-      </Title>
-
-      {feedback && <S.FeedbackMsg $type={feedback.type}>{feedback.message}</S.FeedbackMsg>}
-
-      <S.FieldGroup>
-        <S.Label htmlFor="current-password">Mot de passe actuel</S.Label>
-        <S.Input
-          id="current-password"
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
-      </S.FieldGroup>
-
-      <S.FieldGrid>
-        <S.FieldGroup>
-          <S.Label htmlFor="new-password">Nouveau mot de passe</S.Label>
-          <S.Input
-            id="new-password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-        </S.FieldGroup>
-
-        <S.FieldGroup>
-          <S.Label htmlFor="confirm-password">Confirmer le nouveau mot de passe</S.Label>
-          <S.Input
-            id="confirm-password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-        </S.FieldGroup>
-      </S.FieldGrid>
-
-      <S.ActionsRow>
+    <SettingsCard
+      title="Modifier le mot de passe"
+      description="8 caractères minimum, avec une majuscule, une minuscule et un chiffre."
+      onSubmit={handleSubmit}
+      actions={
         <Button
           type="submit"
-          loading={loading}
+          $loading={loading}
           disabled={!currentPassword || !newPassword || !confirmPassword}
         >
           Changer le mot de passe
         </Button>
-      </S.ActionsRow>
-    </S.FormCard>
+      }
+    >
+      {feedback && <Alert variant={feedback.type === 'success' ? 'success' : 'danger'}>{feedback.message}</Alert>}
+
+      <TextField id="current-password" label="Mot de passe actuel" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+
+      <FieldGrid>
+        <TextField id="new-password" label="Nouveau mot de passe" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} />
+
+        <TextField id="confirm-password" label="Confirmer le nouveau mot de passe" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} />
+      </FieldGrid>
+    </SettingsCard>
   );
 };

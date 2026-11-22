@@ -1,16 +1,10 @@
 import { getErrorMessage } from '@/services/apiError';
 import { fetchEmailPreviewHtml, fetchEmailPreviews } from '@/services/emailPreview.api';
 import { EmailAddress, EmailPreview } from '@/types/emailPreview.types';
-import { Button } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { EmptyState } from '@/ui/components';
-import { ListGroup } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { Loading } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { PageHeader } from '@/components/PageHeader';
+import { Alert, Button, Card, EmptyState, ListGroup, Loading, Text } from 'core-react/ui';
 import { useCallback, useEffect, useState } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 const Container = styled.div`
   display: flex;
@@ -75,7 +69,8 @@ const PreviewFrame = styled.iframe`
   width: 100%;
   height: 75vh;
   border: 0;
-  background-color: #ffffff;
+  /* Un e-mail se lit sur fond blanc, quel que soit le thème de l'app */
+  background-color: ${({ theme }) => theme.colors.white};
 `;
 
 const CenteredBox = styled.div`
@@ -133,12 +128,11 @@ export const EmailPreviewPage = () => {
 
   return (
     <Container>
-      <div>
-        <Title as="h2">Prévisualisation des e-mails</Title>
-        <Text color="muted" size="sm">
-          Rendu des templates d'e-mails avec des données factices (aucun envoi)
-        </Text>
-      </div>
+      <PageHeader
+        title="E-mails"
+        description="Rendu des templates d'e-mails avec des données factices (aucun envoi)."
+        icon="email-outline"
+      />
 
       {isListLoading ? (
         <CenteredBox>
@@ -152,7 +146,7 @@ export const EmailPreviewPage = () => {
             {previews.map((preview) => (
               <ListGroup.Item
                 key={preview.slug}
-                active={preview.slug === selectedSlug}
+                $active={preview.slug === selectedSlug}
                 onClick={() => selectPreview(preview.slug)}
               >
                 <ItemContent>
@@ -166,26 +160,26 @@ export const EmailPreviewPage = () => {
           <Card>
             <PreviewHeader>
               <EnvelopeGrid>
-                <Text size="xs" color="muted">
+                <Text $size="xs" $color="muted">
                   De
                 </Text>
-                <Text size="sm">{formatAddresses(selected?.from, 'Expéditeur non configuré')}</Text>
-                <Text size="xs" color="muted">
+                <Text $size="sm">{formatAddresses(selected?.from, 'Expéditeur non configuré')}</Text>
+                <Text $size="xs" $color="muted">
                   À
                 </Text>
-                <Text size="sm">{formatAddresses(selected?.to, '—')}</Text>
-                <Text size="xs" color="muted">
+                <Text $size="sm">{formatAddresses(selected?.to, '—')}</Text>
+                <Text $size="xs" $color="muted">
                   Objet
                 </Text>
-                <Text weight="semibold" size="sm">
+                <Text $weight="semibold" $size="sm">
                   {selected?.subject ?? '—'}
                 </Text>
               </EnvelopeGrid>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                loading={isPreviewLoading}
+                $variant="outline"
+                $size="sm"
+                $loading={isPreviewLoading}
                 disabled={!selectedSlug || isPreviewLoading}
                 onClick={() => selectedSlug && loadHtml(selectedSlug)}
               >
@@ -194,9 +188,9 @@ export const EmailPreviewPage = () => {
             </PreviewHeader>
 
             {error && (
-              <div style={{ padding: 16 }}>
+              <Card.Body>
                 <Alert variant="danger">{error}</Alert>
-              </div>
+              </Card.Body>
             )}
 
             {isPreviewLoading && !html ? (

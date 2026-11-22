@@ -1,12 +1,49 @@
 import { unlockJournal } from '@/services/journal.api';
-import { Button } from '@/ui/components';
-import { Icon } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { Alert, Button, Card, Icon, Text, TextField, Title } from 'core-react/ui';
 import React, { useState } from 'react';
-import * as S from './JournalLockScreen.styles';
+import { styled } from 'styled-components';
 
-export const JournalLockScreen: React.FC<{ onSuccess?: () => void }> = ({ onSuccess }) => {
+const Panel = styled(Card)`
+  max-width: 24rem;
+  margin: ${({ theme }) => `${theme.spacing[6]} auto`};
+`;
+
+const Body = styled.form`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[4]};
+  padding: ${({ theme }) => theme.spacing[6]};
+  text-align: center;
+`;
+
+const LockBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: ${({ theme }) => theme.radii.full};
+  background-color: ${({ theme }) => theme.colors.primary.subtle};
+  color: ${({ theme }) => theme.colors.primary.dark};
+`;
+
+const Heading = styled(Title)`
+  margin-bottom: ${({ theme }) => theme.spacing[1]};
+`;
+
+const PinField = styled.div`
+  width: 100%;
+
+  input {
+    text-align: center;
+    letter-spacing: 0.5em;
+    font-size: ${({ theme }) => theme.typography.sizes.lg};
+  }
+`;
+
+/** Déverrouillage de l'onglet Privé par le code secret (POST /api/journal/unlock). */
+export const JournalLockScreen: React.FC<{ onUnlocked?: () => void }> = ({ onUnlocked }) => {
   const [passcode, setPasscode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +56,7 @@ export const JournalLockScreen: React.FC<{ onSuccess?: () => void }> = ({ onSucc
       setLoading(true);
       setError(null);
       await unlockJournal(passcode);
-      onSuccess?.();
+      onUnlocked?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Code secret incorrect.');
       setPasscode('');
@@ -29,38 +66,39 @@ export const JournalLockScreen: React.FC<{ onSuccess?: () => void }> = ({ onSucc
   };
 
   return (
-    <S.Container>
-      <S.Card onSubmit={handleSubmit}>
-        <S.IconWrapper>
+    <Panel $elevation="md">
+      <Body onSubmit={handleSubmit}>
+        <LockBadge aria-hidden="true">
           <Icon name="lock-outline" size={28} />
-        </S.IconWrapper>
-
+        </LockBadge>
         <div>
-          <Title as="h3">Journal intime protégé</Title>
-          <Text size="xs" color="muted" style={{ marginTop: 4 }}>
-            Saisis ton code secret pour déverrouiller tes entrées.
+          <Heading as="h2">Espace privé</Heading>
+          <Text $size="sm" $color="muted">
+            Saisissez votre code secret pour afficher vos posts privés.
           </Text>
         </div>
 
-        <S.PinInput
-          type="password"
-          maxLength={8}
-          autoFocus
-          value={passcode}
-          onChange={(e) => setPasscode(e.target.value)}
-          placeholder="••••"
-        />
+        {error && <Alert variant="danger">{error}</Alert>}
 
-        {error && (
-          <Text size="xs" style={{ color: '#e7000b' }}>
-            {error}
-          </Text>
-        )}
+        <PinField>
+          <TextField
+            label="Code secret"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            autoFocus
+            value={passcode}
+            onChange={(e) => setPasscode(e.target.value)}
+            placeholder="••••"
+          />
+        </PinField>
 
-        <Button type="submit" loading={loading} disabled={!passcode.trim()} style={{ width: '100%' }}>
+        <Button type="submit" $loading={loading} disabled={!passcode.trim()} $fullWidth>
+          <Icon name="key-outline" size={18} />
           Déverrouiller
         </Button>
-      </S.Card>
-    </S.Container>
+      </Body>
+    </Panel>
   );
 };

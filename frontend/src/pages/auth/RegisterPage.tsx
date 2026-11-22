@@ -1,14 +1,10 @@
 import { getErrorMessage, getFieldErrors } from '@/services/apiError';
 import { fetchRegister, resendVerificationEmail } from '@/services/auth.api';
-import { Button } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { TextField } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { AuthCard } from '@/components/AuthCard';
+import { Alert, Button, Link, Text, TextField } from 'core-react/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink } from 'react-router-dom';
 import { z } from 'zod';
 import { passwordSchema } from './authSchemas';
 
@@ -92,47 +88,36 @@ export const RegisterPage = () => {
 
   if (registered) {
     return (
-      <Card elevation="sm">
-        <Card.Header>
-          <Card.Title>Vérifiez votre boîte mail</Card.Title>
-        </Card.Header>
-        <Card.Body>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Alert variant="success">{registered.message}</Alert>
-            <Text size="sm" color="muted">
-              Cliquez sur le lien reçu pour activer votre compte : vous serez connecté automatiquement. Pensez à
-              vérifier vos courriers indésirables.
-            </Text>
-            {resendMessage ? (
-              <Alert variant="info">{resendMessage}</Alert>
-            ) : (
-              <Button type="button" variant="outline" loading={isResending} onClick={handleResend} fullWidth>
-                Renvoyer l'e-mail de vérification
-              </Button>
-            )}
-          </div>
-        </Card.Body>
-        <Card.Footer style={{ justifyContent: 'center' }}>
-          <RouterLink to="/login" style={{ color: 'inherit', fontWeight: 600 }}>
-            Retour à la connexion
-          </RouterLink>
-        </Card.Footer>
-      </Card>
+      <AuthCard title="Vérifiez votre boîte mail" footer={<Link href="/login">Retour à la connexion</Link>}>
+        <Alert variant="success">{registered.message}</Alert>
+        <Text $size="sm" $color="muted">
+          Cliquez sur le lien reçu pour activer votre compte : vous serez connecté automatiquement. Pensez à
+          vérifier vos courriers indésirables.
+        </Text>
+        {resendMessage ? (
+          <Alert variant="info">{resendMessage}</Alert>
+        ) : (
+          <Button type="button" $variant="outline" $loading={isResending} onClick={handleResend} $fullWidth>
+            Renvoyer l'e-mail de vérification
+          </Button>
+        )}
+      </AuthCard>
     );
   }
 
   return (
-    <Card elevation="sm">
-      <Card.Header>
-        <Card.Title>Créer un compte</Card.Title>
-      </Card.Header>
-      <Card.Body>
+    <AuthCard
+      title="Créer un compte"
+      subtitle="Quelques secondes suffisent pour commencer."
+      footer={
+        <>
+          Déjà inscrit ? <Link href="/login">Se connecter</Link>
+        </>
+      }
+    >
+        {apiError && <Alert variant="danger">{apiError}</Alert>}
+
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          {apiError && (
-            <div style={{ marginBottom: '1rem' }}>
-              <Alert variant="danger">{apiError}</Alert>
-            </div>
-          )}
 
           <TextField
             label="Adresse e-mail"
@@ -168,19 +153,10 @@ export const RegisterPage = () => {
             {...register('confirmPassword')}
           />
 
-          <Button type="submit" loading={isSubmitting} fullWidth>
+          <Button type="submit" $loading={isSubmitting} $fullWidth>
             S'inscrire
           </Button>
         </form>
-      </Card.Body>
-      <Card.Footer style={{ justifyContent: 'center' }}>
-        <Text size="sm">
-          Déjà inscrit ?{' '}
-          <RouterLink to="/login" style={{ color: 'inherit', fontWeight: 600 }}>
-            Se connecter
-          </RouterLink>
-        </Text>
-      </Card.Footer>
-    </Card>
+    </AuthCard>
   );
 };

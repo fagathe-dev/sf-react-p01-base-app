@@ -2,35 +2,33 @@
 
 namespace App\Entity;
 
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Uid\Uuid;
 
+/**
+ * Socle commun des contenus textuels datés et épinglables (aujourd'hui : JournalPost).
+ */
 #[ORM\MappedSuperclass]
 abstract class AbstractTextEntry
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[Groups(['user.read', 'note.list', 'note.read', 'entry.list', 'entry.read'])]
+    #[Groups(['journal_post.list', 'journal_post.read'])]
     private ?Uuid $id = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['entry.list', 'entry.read', 'note.list', 'note.read'])]
-    protected ?string $content = null;
-
     #[ORM\Column]
-    #[Groups(['entry.list', 'entry.read', 'note.list', 'note.read'])]
+    #[Groups(['journal_post.list', 'journal_post.read'])]
     protected ?\DateTimeImmutable $created_at = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['entry.list', 'entry.read', 'note.list', 'note.read'])]
+    #[Groups(['journal_post.list', 'journal_post.read'])]
     protected ?\DateTimeImmutable $updated_at = null;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['entry.list', 'entry.read', 'note.list', 'note.read'])]
-    protected ?bool $is_pinned = null;
+    #[ORM\Column(options: ['default' => false])]
+    #[Groups(['journal_post.list', 'journal_post.read'])]
+    protected bool $is_pinned = false;
 
     public function __construct()
     {
@@ -42,26 +40,14 @@ abstract class AbstractTextEntry
         return $this->id;
     }
 
-    public function isPinned(): ?bool
+    public function isPinned(): bool
     {
         return $this->is_pinned;
     }
 
-    public function setIsPinned(?bool $is_pinned): static
+    public function setIsPinned(bool $is_pinned): static
     {
         $this->is_pinned = $is_pinned;
-
-        return $this;
-    }
-
-    public function getContent(): ?string
-    {
-        return $this->content;
-    }
-
-    public function setContent(?string $content): static
-    {
-        $this->content = $content;
 
         return $this;
     }

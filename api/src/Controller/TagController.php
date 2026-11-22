@@ -25,9 +25,9 @@ final class TagController extends AbstractController
      * Récupère tous les Tag de l'utilisateur connecté.
      */
     #[Route('', name: 'list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $response = $this->service->listTags();
+        $response = $this->service->listTags($request);
 
         return $this->json(
             $response->data,

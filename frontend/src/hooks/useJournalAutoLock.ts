@@ -1,4 +1,4 @@
-import { useJournalStore } from '@/stores/journal.store';
+import { selectLockActive, useJournalStore } from '@/stores/journal.store';
 import { useActionTimer, usePageFocus } from 'core-react';
 import { useEffect, useRef } from 'react';
 
@@ -15,7 +15,8 @@ export const JOURNAL_AUTO_LOCK_DELAY_MS = 90_000;
  */
 export const useJournalAutoLock = () => {
   const lock = useJournalStore((state) => state.lock);
-  const isUnlocked = useJournalStore((state) => state.isUnlocked);
+  // Sans protection active (pas de code, ou protection désactivée), il n'y a rien à reverrouiller
+  const isUnlocked = useJournalStore((state) => state.isUnlocked && selectLockActive(state));
 
   // Onglet visible ET fenêtre au premier plan
   const isFocused = usePageFocus();

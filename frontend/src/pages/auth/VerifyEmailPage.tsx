@@ -1,10 +1,8 @@
 import { getErrorMessage } from '@/services/apiError';
 import { verifyEmail } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { Loading } from '@/ui/components';
+import { AuthCard } from '@/components/AuthCard';
+import { Alert, Button, Loading } from 'core-react/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -39,22 +37,17 @@ export const VerifyEmailPage = () => {
   }, [token, navigate]);
 
   return (
-    <Card elevation="sm">
-      <Card.Header>
-        <Card.Title>Vérification du compte</Card.Title>
-      </Card.Header>
-      <Card.Body>
-        {error ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Alert variant="danger">{error}</Alert>
-            <Button href="/login" fullWidth>
-              Se connecter pour recevoir un nouveau lien
-            </Button>
-          </div>
-        ) : (
-          <Loading size="lg" label="Activation de votre compte…" />
-        )}
-      </Card.Body>
-    </Card>
+    <AuthCard title="Vérification du compte">
+      {error ? (
+        <>
+          <Alert variant="danger">{error}</Alert>
+          <Button href="/login" $fullWidth>
+            Se connecter pour recevoir un nouveau lien
+          </Button>
+        </>
+      ) : (
+        <Loading size="lg" label="Activation de votre compte…" />
+      )}
+    </AuthCard>
   );
 };

@@ -4,20 +4,13 @@ import {
   ConfirmEmailChangePage,
   EmailPreviewPage,
   ForgotPasswordPage,
-  JournalCreatePage,
-  JournalDetailsPage,
-  JournalEditPage,
-  JournalsPage,
+  JournalPage,
   LoginPage,
   LogoutPage,
   LogsPage,
-  NotesArchivePage,
-  NotesPage,
-  NotesTrashPage,
   ProfilePage,
   RegisterPage,
   ResetPasswordPage,
-  TagsPage,
   TodoPage,
   VerifyEmailPage,
 } from '@/pages';
@@ -52,33 +45,15 @@ export const router = createBrowserRouter([
 
           // Module Tags
           {
+            // Les tags sont gérés dans l'onglet « Tags » de la page Tâches
             path: '/tags',
-            element: <TagsPage />,
+            element: <Navigate to="/todos?tab=tags" replace />,
           },
 
-          // Module Notes
-          {
-            path: '/notes',
-            element: <NotesPage />,
-          },
-          {
-            path: '/archives',
-            element: <NotesArchivePage />,
-          },
-          {
-            path: '/trash',
-            element: <NotesTrashPage />,
-          },
-
-          // Module Journal intime
+          // Module Journal (onglet courant dans ?tab=feed|memories|bookmarks|tags|private)
           {
             path: '/journal',
-            children: [
-              { index: true, element: <JournalsPage /> },
-              { path: 'new', element: <JournalCreatePage /> },
-              { path: ':journalId', element: <JournalDetailsPage /> },
-              { path: ':journalId/edit', element: <JournalEditPage /> },
-            ],
+            element: <JournalPage />,
           },
 
           // Gestion du compte & profil

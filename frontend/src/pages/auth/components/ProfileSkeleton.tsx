@@ -1,110 +1,72 @@
-import { Skeleton, SkeletonCircle, SkeletonGroup, SkeletonLine } from '@/ui/components';
+import { Card, Flex, Skeleton, SkeletonCircle, SkeletonGroup, SkeletonLine } from 'core-react/ui';
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
+import { FieldGrid } from './ProfileForms.styles';
 
-// Mêmes conteneurs que ProfilePage
-const PageContainer = styled.div`
+const Content = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-width: 820px;
-  width: 100%;
+  gap: ${({ theme }) => theme.spacing[5]};
+  max-width: 48rem;
+  margin-top: ${({ theme }) => theme.spacing[5]};
 `;
 
-const ProfileBanner = styled.div`
+const Grow = styled.div`
   display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  background-color: ${({ theme }) => theme.colors.background.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.base};
-  flex-wrap: wrap;
-`;
-
-const Column = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   flex: 1;
-  min-width: 200px;
-`;
-
-const Row = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
-
-const TabRow = styled(Row)`
-  gap: 24px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
-`;
-
-// Même carte que FormCard (ProfileForms.styles)
-const FormCard = styled.div`
-  display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  background-color: ${({ theme }) => theme.colors.background.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.base};
-  max-width: 640px;
-`;
-
-const FieldGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
+  gap: ${({ theme }) => theme.spacing[2]};
 `;
 
 const Field: React.FC<{ label: string }> = ({ label }) => (
-  <Column style={{ gap: 6, minWidth: 0 }}>
+  <Flex $direction="column" $gap="0.375rem">
     <SkeletonLine $width={label} $height={10} />
-    <Skeleton $variant="rectangular" $height={40} />
-  </Column>
+    <Skeleton $variant="rounded" $height={40} />
+  </Flex>
 );
 
-/** Chargement de « Mon Profil » : bandeau (avatar, nom, rôle), onglets et formulaire d'informations. */
+/** Chargement de « Mon profil » : en-tête, carte de résumé, onglets et formulaire d'informations. */
 export const ProfileSkeleton: React.FC = () => (
   <SkeletonGroup label="Chargement du profil…">
-    <PageContainer>
-      <SkeletonLine $width={160} $height={26} />
+    <Flex $align="center" $gap="0.75rem">
+      <Skeleton $variant="rounded" $width={44} $height={44} />
+      <Flex $direction="column" $gap="0.5rem">
+        <SkeletonLine $width={180} $height={24} />
+        <SkeletonLine $width={280} $height={12} />
+      </Flex>
+    </Flex>
 
-      <ProfileBanner>
-        <SkeletonCircle $size={76} />
-        <Column>
-          <Row>
-            <SkeletonLine $width="45%" $height={20} />
-            <Skeleton $width={88} $height={20} $radius={999} />
-          </Row>
-          <SkeletonLine $width="60%" $height={12} />
-        </Column>
-      </ProfileBanner>
+    <Content>
+      <Card>
+        <Card.Body>
+          <Flex $align="center" $gap="1.5rem">
+            <SkeletonCircle $size={48} />
+            <Grow>
+              <SkeletonLine $width="40%" $height={20} />
+              <SkeletonLine $width="60%" $height={12} />
+            </Grow>
+          </Flex>
+        </Card.Body>
+      </Card>
 
-      <TabRow>
+      <Flex $gap="1.5rem">
         <SkeletonLine $width={110} $height={14} />
-        <SkeletonLine $width={160} $height={14} />
-        <SkeletonLine $width={100} $height={14} />
-      </TabRow>
+        <SkeletonLine $width={90} $height={14} />
+        <SkeletonLine $width={120} $height={14} />
+      </Flex>
 
-      <FormCard>
-        <SkeletonLine $width={180} $height={16} />
-        <Field label="35%" />
-        <FieldGrid>
-          <Field label="30%" />
-          <Field label="25%" />
-        </FieldGrid>
-        <Row style={{ justifyContent: 'flex-end' }}>
-          <Skeleton $width={130} $height={38} $radius={8} />
-        </Row>
-      </FormCard>
-    </PageContainer>
+      <Card>
+        <Card.Body>
+          <Flex $direction="column" $gap="1rem">
+            <SkeletonLine $width={200} $height={18} />
+            <Field label="35%" />
+            <FieldGrid>
+              <Field label="30%" />
+              <Field label="25%" />
+            </FieldGrid>
+          </Flex>
+        </Card.Body>
+      </Card>
+    </Content>
   </SkeletonGroup>
 );

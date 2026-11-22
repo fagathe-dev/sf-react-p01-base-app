@@ -19,9 +19,9 @@ final class TodoController extends AbstractController
     public function __construct(private readonly TodoService $service) {}
 
     #[Route('', name: 'list', methods: ['GET'])]
-    public function list(): JsonResponse
+    public function list(Request $request): JsonResponse
     {
-        $response = $this->service->listTodos();
+        $response = $this->service->listTodos($request);
         return $this->json($response->data, $response->status, $response->headers, $response->context);
     }
 

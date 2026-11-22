@@ -1,4 +1,4 @@
-import { ColorEnum, Tag } from './tag.types';
+import { ColorEnum } from './tag.types';
 
 export type MoodEnum =
   | 'angry'
@@ -18,44 +18,29 @@ export type MoodEnum =
   | 'stressed';
 
 export const MOOD_META: Record<MoodEnum, { emoji: string; label: string }> = {
-  angry: { emoji: '😡', label: 'En colère' },
-  anxious: { emoji: '😟', label: 'Anxieux' },
-  exhausted: { emoji: '😫', label: 'Épuisé' },
-  frustrated: { emoji: '😤', label: 'Frustré' },
-  grateful: { emoji: '🙏', label: 'Reconnaissant' },
-  happy: { emoji: '🙂', label: 'Heureux' },
-  lost: { emoji: '😕', label: 'Perdu' },
-  hopeful: { emoji: '🤞', label: "Plein d'espoir" },
-  in_love: { emoji: '😍', label: 'Amoureux' },
-  neutral: { emoji: '😐', label: 'Neutre' },
-  motivated: { emoji: '💪', label: 'Motivé' },
-  relaxed: { emoji: '😌', label: 'Détendu' },
   radiant: { emoji: '🤩', label: 'Rayonnant' },
-  sad: { emoji: '😔', label: 'Triste' },
+  happy: { emoji: '🙂', label: 'Heureux' },
+  grateful: { emoji: '🙏', label: 'Reconnaissant' },
+  in_love: { emoji: '😍', label: 'Amoureux' },
+  motivated: { emoji: '💪', label: 'Motivé' },
+  hopeful: { emoji: '🤞', label: "Plein d'espoir" },
+  relaxed: { emoji: '😌', label: 'Détendu' },
+  neutral: { emoji: '😐', label: 'Neutre' },
+  lost: { emoji: '😕', label: 'Perdu' },
+  exhausted: { emoji: '😫', label: 'Épuisé' },
+  anxious: { emoji: '😟', label: 'Anxieux' },
   stressed: { emoji: '😰', label: 'Stressé' },
+  sad: { emoji: '😔', label: 'Triste' },
+  frustrated: { emoji: '😤', label: 'Frustré' },
+  angry: { emoji: '😡', label: 'En colère' },
 };
 
-export type JournalBlockType = 'text' | 'image' | 'video' | 'gallery' | 'quote';
+/** Onglets de /journal (?tab=) ; « tags » est géré côté front, « private » exige le code secret. */
+export type JournalTab = 'feed' | 'memories' | 'bookmarks' | 'tags' | 'private';
+/** Onglets qui listent des posts (valeurs acceptées par GET /api/journal/posts?tab=) */
+export type JournalPostTab = Exclude<JournalTab, 'tags'>;
 
-export interface EntryBlock {
-  id: string;
-  type: JournalBlockType;
-  position: number;
-  data: Record<string, unknown>;
-  settings?: Record<string, unknown> | null;
-  createdAt?: string;
-  updatedAt?: string | null;
-}
-
-export interface SaveEntryBlockPayload {
-  id?: string | null;
-  type: JournalBlockType;
-  position: number;
-  data: Record<string, unknown>;
-  settings?: Record<string, unknown> | null;
-}
-
-export interface EntryLocation {
+export interface JournalLocation {
   id?: string;
   name: string;
   latitude: number;
@@ -65,49 +50,74 @@ export interface EntryLocation {
   country?: string | null;
 }
 
-export interface EntryMedia {
+export interface JournalMedia {
   id: string;
   originalName: string;
-  niceName?: string | null;
   filePath: string;
   mimeType: string;
-  type?: 'image' | 'video' | 'audio' | string | null;
+  type?: string | null;
   extension: string;
   size: number;
-  isPinned: boolean;
   createdAt: string;
-  updatedAt?: string | null;
 }
 
-export interface Entry {
+export interface JournalTag {
   id: string;
-  title: string | null;
-  content?: string | null;
-  blocks?: EntryBlock[];
-  slug?: string | null;
-  color?: ColorEnum | null;
-  mood?: MoodEnum | null;
-  is_pinned?: boolean | null;
-  tag?: Tag | null;
-  location?: EntryLocation | null;
-  entryMedia?: EntryMedia[];
+  name: string;
+  slug: string;
+  color: ColorEnum;
+  createdAt?: string;
+  updatedAt?: string | null;
+  /** Nombre de posts racines (publics seulement sans code secret) — GET /api/journal/tags */
+  postCount?: number;
+}
+
+/** Les clés suivent la sérialisation de l'API (snake_case pour les champs du post). */
+export interface JournalPost {
+  id: string;
+  content: string;
+  mood: MoodEnum | null;
+  color: ColorEnum | null;
+  is_pinned: boolean;
+  is_bookmarked: boolean;
+  is_private: boolean;
+  parent_id: string | null;
+  location: JournalLocation | null;
+  tags: JournalTag[];
+  medias: JournalMedia[];
+  /** Suites du post (un seul niveau) ; vide sur une suite */
+  replies?: JournalPost[];
   created_at: string;
-  updated_at?: string | null;
+  updated_at: string | null;
 }
 
-export interface CreateEntryPayload {
-  title?: string | null;
-  blocks?: SaveEntryBlockPayload[];
-  color?: ColorEnum | null;
-  mood?: MoodEnum | null;
-  isPinned?: boolean;
+export type JournalCounts = Partial<Record<JournalPostTab, number>>;
+
+export interface JournalPostFilters {
   tag?: string | null;
-  location?: EntryLocation | null;
+  q?: string | null;
 }
 
-export interface UpdateEntryPayload extends Partial<CreateEntryPayload> {
+export interface CreateJournalPostPayload {
+  content: string;
+  mood?: MoodEnum | null;
+  tagIds?: string[];
+  location?: JournalLocation | null;
+  parentId?: string | null;
+  isPrivate?: boolean;
   medias?: File[];
-  deletedMedias?: string[];
+}
+
+export interface UpdateJournalPostPayload {
+  content?: string;
+  mood?: MoodEnum | null;
+  tagIds?: string[];
+  location?: JournalLocation | null;
+}
+
+export interface JournalTagPayload {
+  name: string;
+  color: ColorEnum;
 }
 
 export interface UnlockJournalPayload {

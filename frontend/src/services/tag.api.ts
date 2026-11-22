@@ -2,8 +2,10 @@ import { CreateTagPayload, Tag, UpdateTagPayload } from '@/types/tag.types';
 import { toApiError } from './apiError';
 import { fetchAPI } from './fetchAPI';
 
-export const fetchTags = async (): Promise<Tag[]> => {
-  const res = await fetchAPI<Tag[]>('/tags');
+/** Tags de l'utilisateur ; `usedIn: 'todos'` ne garde que ceux rattachés à au moins une tâche. */
+export const fetchTags = async (filters: { usedIn?: 'todos' } = {}): Promise<Tag[]> => {
+  const query = filters.usedIn ? `?usedIn=${filters.usedIn}` : '';
+  const res = await fetchAPI<Tag[]>(`/tags${query}`);
   if (!res.ok) throw toApiError(res, 'Erreur lors de la récupération des tags.');
   return res.data ?? [];
 };

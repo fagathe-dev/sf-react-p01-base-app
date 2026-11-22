@@ -1,11 +1,9 @@
 import { useAuthStore } from '@/stores/auth.store';
 import { AuthResponse } from '@/types/auth.types';
-import { SegmentedControl } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { AuthCard } from '@/components/AuthCard';
+import { Link, SegmentedControl } from 'core-react/ui';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { CodeLoginForm, PasswordLoginForm } from './components';
 
 type LoginMode = 'password' | 'code';
@@ -14,10 +12,6 @@ const LOGIN_MODES: Array<{ value: LoginMode; label: string; icon: string }> = [
   { value: 'password', label: 'Mot de passe', icon: 'lock-outline' },
   { value: 'code', label: 'Code par e-mail', icon: 'email-fast-outline' },
 ];
-
-const ModeSwitcher = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing[4]};
-`;
 
 export const LoginPage = () => {
   const [mode, setMode] = useState<LoginMode>('password');
@@ -37,35 +31,28 @@ export const LoginPage = () => {
   };
 
   return (
-    <Card elevation="sm">
-      <Card.Header>
-        <Card.Title>Connexion</Card.Title>
-      </Card.Header>
-      <Card.Body>
-        <ModeSwitcher>
-          <SegmentedControl
-            aria-label="Mode de connexion"
-            options={LOGIN_MODES}
-            value={mode}
-            onChange={setMode}
-            fullWidth
-          />
-        </ModeSwitcher>
+    <AuthCard
+      title="Bon retour parmi nous"
+      subtitle="Connectez-vous pour retrouver vos tâches et votre journal."
+      footer={
+        <>
+          Pas encore de compte ? <Link href="/register">Créer un compte</Link>
+        </>
+      }
+    >
+      <SegmentedControl
+        aria-label="Mode de connexion"
+        options={LOGIN_MODES}
+        value={mode}
+        onChange={setMode}
+        fullWidth
+      />
 
-        {mode === 'password' ? (
-          <PasswordLoginForm onAuthenticated={handleAuthenticated} />
-        ) : (
-          <CodeLoginForm onAuthenticated={handleAuthenticated} />
-        )}
-      </Card.Body>
-      <Card.Footer style={{ justifyContent: 'center' }}>
-        <Text size="sm">
-          Pas encore de compte ?{' '}
-          <RouterLink to="/register" style={{ color: 'inherit', fontWeight: 600 }}>
-            Créer un compte
-          </RouterLink>
-        </Text>
-      </Card.Footer>
-    </Card>
+      {mode === 'password' ? (
+        <PasswordLoginForm onAuthenticated={handleAuthenticated} />
+      ) : (
+        <CodeLoginForm onAuthenticated={handleAuthenticated} />
+      )}
+    </AuthCard>
   );
 };

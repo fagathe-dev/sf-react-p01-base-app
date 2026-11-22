@@ -1,7 +1,7 @@
 import { LogException, LogStackFrame } from '@/types/log.types';
-import { Button } from '@/ui/components';
+import { Button } from 'core-react/ui';
 import { useState } from 'react';
-import styled, { css } from 'styled-components';
+import { styled, css } from 'styled-components';
 import { isAppFrame } from './logFormat';
 
 const Summary = styled.div`
@@ -125,7 +125,7 @@ export const LogExceptionDetails = ({ exception }: LogExceptionDetailsProps) => 
               {exception.truncated_frames ? ` (+${exception.truncated_frames} non conservés)` : ''}
             </TraceTitle>
             {appFrameCount > 0 && vendorFrameCount > 0 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowVendor((value) => !value)}>
+              <Button type="button" $variant="ghost" $size="sm" onClick={() => setShowVendor((value) => !value)}>
                 {showVendor ? 'Masquer vendor' : `Afficher vendor (${vendorFrameCount})`}
               </Button>
             )}

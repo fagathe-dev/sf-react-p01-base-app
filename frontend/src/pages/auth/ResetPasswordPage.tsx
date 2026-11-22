@@ -1,13 +1,11 @@
 import { getErrorMessage, getFieldErrors } from '@/services/apiError';
 import { resetPassword } from '@/services/auth.api';
-import { Button } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { TextField } from '@/ui/components';
+import { AuthCard } from '@/components/AuthCard';
+import { Alert, Button, Link, TextField } from 'core-react/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { passwordSchema } from './authSchemas';
 
@@ -61,25 +59,21 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <Card elevation="sm">
-      <Card.Header>
-        <Card.Title>Nouveau mot de passe</Card.Title>
-      </Card.Header>
-      <Card.Body>
+    <AuthCard
+      title="Nouveau mot de passe"
+      subtitle="Choisissez un mot de passe que vous n'utilisez nulle part ailleurs."
+      footer={<Link href="/forgot-password">Faire une nouvelle demande</Link>}
+    >
         {successMessage ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <>
             <Alert variant="success">{successMessage}</Alert>
-            <Button href="/login" fullWidth>
+            <Button href="/login" $fullWidth>
               Se connecter
             </Button>
-          </div>
+          </>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            {apiError && (
-              <div style={{ marginBottom: '1rem' }}>
-                <Alert variant="danger">{apiError}</Alert>
-              </div>
-            )}
+            {apiError && <Alert variant="danger">{apiError}</Alert>}
 
             <TextField
               label="Nouveau mot de passe"
@@ -99,17 +93,11 @@ export const ResetPasswordPage = () => {
               {...register('confirmPassword')}
             />
 
-            <Button type="submit" loading={isSubmitting} disabled={!token} fullWidth>
+            <Button type="submit" $loading={isSubmitting} disabled={!token} $fullWidth>
               Enregistrer le mot de passe
             </Button>
           </form>
         )}
-      </Card.Body>
-      <Card.Footer style={{ justifyContent: 'center' }}>
-        <RouterLink to="/forgot-password" style={{ color: 'inherit', fontWeight: 600 }}>
-          Faire une nouvelle demande
-        </RouterLink>
-      </Card.Footer>
-    </Card>
+    </AuthCard>
   );
 };

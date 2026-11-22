@@ -1,18 +1,18 @@
+import { SettingsCard } from '@/components/SettingsCard';
 import { updateJournalPasscode } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useJournalStore } from '@/stores/journal.store';
-import { Button } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { Alert, Button, TextField } from 'core-react/ui';
 import React, { useState } from 'react';
-import * as S from './ProfileForms.styles';
+import { FieldGrid } from './ProfileForms.styles';
 
 export const ChangeJournalPasscodeForm: React.FC = () => {
-  const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const lockJournal = useJournalStore((state) => state.lock);
+  const loadSecurity = useJournalStore((state) => state.loadSecurity);
 
-  const hasPasscode = Boolean(user?.hasJournalPasscode);
+  // Source de vérité : GET /account/journal-passcode/status (user.hasJournalPasscode n'est pas sérialisé)
+  const hasPasscode = Boolean(useJournalStore((state) => state.security?.hasPasscode));
 
   const [currentPasscode, setCurrentPasscode] = useState('');
   const [passcode, setPasscode] = useState('');
@@ -42,6 +42,7 @@ export const ChangeJournalPasscodeForm: React.FC = () => {
 
       setUser(res.user);
       lockJournal();
+      await loadSecurity();
 
       setFeedback({
         type: 'success',
@@ -63,70 +64,31 @@ export const ChangeJournalPasscodeForm: React.FC = () => {
   const isSubmitDisabled = !passcode || !confirmPasscode || passcode.length < 4 || (hasPasscode && !currentPasscode);
 
   return (
-    <S.FormCard onSubmit={handleSubmit}>
-      <div>
-        <Title as="h4" style={{ margin: 0 }}>
-          Code secret du Journal intime
-        </Title>
-        <Text size="xs" color="muted" style={{ marginTop: 4 }}>
-          {hasPasscode
-            ? 'Modifiez le code secret (4 à 8 caractères) protégeant l’accès à votre journal.'
-            : 'Configurez un code secret (4 à 8 caractères) pour verrouiller l’accès à votre journal intime.'}
-        </Text>
-      </div>
-
-      {feedback && <S.FeedbackMsg $type={feedback.type}>{feedback.message}</S.FeedbackMsg>}
-
-      {hasPasscode && (
-        <S.FieldGroup>
-          <S.Label htmlFor="current-journal-passcode">Code secret actuel</S.Label>
-          <S.Input
-            id="current-journal-passcode"
-            type="password"
-            value={currentPasscode}
-            onChange={(e) => setCurrentPasscode(e.target.value)}
-            maxLength={8}
-            placeholder="••••"
-            required
-          />
-        </S.FieldGroup>
-      )}
-
-      <S.FieldGrid>
-        <S.FieldGroup>
-          <S.Label htmlFor="new-journal-passcode">Nouveau code secret</S.Label>
-          <S.Input
-            id="new-journal-passcode"
-            type="password"
-            value={passcode}
-            onChange={(e) => setPasscode(e.target.value)}
-            minLength={4}
-            maxLength={8}
-            placeholder="4 à 8 caractères"
-            required
-          />
-        </S.FieldGroup>
-
-        <S.FieldGroup>
-          <S.Label htmlFor="confirm-journal-passcode">Confirmer le code secret</S.Label>
-          <S.Input
-            id="confirm-journal-passcode"
-            type="password"
-            value={confirmPasscode}
-            onChange={(e) => setConfirmPasscode(e.target.value)}
-            minLength={4}
-            maxLength={8}
-            placeholder="••••"
-            required
-          />
-        </S.FieldGroup>
-      </S.FieldGrid>
-
-      <S.ActionsRow>
-        <Button type="submit" loading={loading} disabled={isSubmitDisabled}>
+    <SettingsCard
+      title="Code secret du journal"
+      description={
+        hasPasscode
+          ? 'Modifiez le code secret (4 à 8 caractères) qui protège l’onglet Privé de votre journal. Le modifier reverrouille le journal.'
+          : 'Configurez un code secret (4 à 8 caractères) pour verrouiller l’onglet Privé de votre journal.'
+      }
+      onSubmit={handleSubmit}
+      actions={
+        <Button type="submit" $loading={loading} disabled={isSubmitDisabled}>
           {hasPasscode ? 'Modifier le code secret' : 'Activer le code secret'}
         </Button>
-      </S.ActionsRow>
-    </S.FormCard>
+      }
+    >
+      {feedback && <Alert variant={feedback.type === 'success' ? 'success' : 'danger'}>{feedback.message}</Alert>}
+
+      {hasPasscode && (
+        <TextField id="current-journal-passcode" label="Code secret actuel" type="password" value={currentPasscode} onChange={(e) => setCurrentPasscode(e.target.value)} maxLength={8} placeholder="••••" required />
+      )}
+
+      <FieldGrid>
+        <TextField id="new-journal-passcode" label="Nouveau code secret" type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} minLength={4} maxLength={8} placeholder="4 à 8 caractères" required />
+
+        <TextField id="confirm-journal-passcode" label="Confirmer le code secret" type="password" value={confirmPasscode} onChange={(e) => setConfirmPasscode(e.target.value)} minLength={4} maxLength={8} placeholder="••••" required />
+      </FieldGrid>
+    </SettingsCard>
   );
 };

@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l src/Service/TodoService.php)",
+      "Bash(php bin/console dbal:run-sql \"SELECT table_name, table_rows FROM information_schema.tables WHERE table_schema = DATABASE\\(\\)\")",
+      "Bash(php bin/console dbal:run-sql \"SELECT table_name, GROUP_CONCAT\\(column_name ORDER BY ordinal_position\\) cols FROM information_schema.columns WHERE table_schema = DATABASE\\(\\) AND table_name IN \\('entry','bloc_content','entry_media','location','tag'\\) GROUP BY table_name\")",
+      "Bash(php bin/console dbal:run-sql \"SELECT type, COUNT\\(*\\) n, LEFT\\(MIN\\(CAST\\(data AS CHAR\\)\\),160\\) sample FROM bloc_content GROUP BY type\")",
+      "Bash(php -l src/Entity/User.php)",
+      "Bash(php -l src/Entity/Tag.php)",
+      "Bash(php -l src/Service/AttachmentFileService.php)",
+      "Bash(xargs wc -l)",
+      "Bash(python -I /c/Users/fagathe/AppData/Local/Temp/claude/19a68c2f2d3fee8b/36d3fff1-1b12-4354-87f8-f8fed3a9dea2/scratchpad/codemod/to_core_react.py src)",
+      "Bash(python -I -)",
+      "Bash(printf \"/** Point d'entrée provisoire : remplacé par le nouveau Journal \\(étape 3\\). */\\\\nexport const JournalPage = \\(\\) => null;\\\\n\")",
+      "Bash(python -I /c/Users/fagathe/AppData/Local/Temp/claude/19a68c2f2d3fee8b/36d3fff1-1b12-4354-87f8-f8fed3a9dea2/scratchpad/codemod/profile_fields.py ChangeEmailForm.tsx ChangeInformationsForm.tsx ChangePasswordForm.tsx ChangeJournalPasscodeForm.tsx)",
+      "Bash(python -I /c/Users/fagathe/AppData/Local/Temp/claude/19a68c2f2d3fee8b/36d3fff1-1b12-4354-87f8-f8fed3a9dea2/scratchpad/codemod/profile_cards.py ChangeEmailForm.tsx ChangeInformationsForm.tsx ChangePasswordForm.tsx ChangeJournalPasscodeForm.tsx)",
+      "Bash(php /c/Users/fagathe/AppData/Local/Temp/claude/19a68c2f2d3fee8b/36d3fff1-1b12-4354-87f8-f8fed3a9dea2/scratchpad/codemod/flatten_ns.php src)",
+      "Bash(node -e \"import\\('core-react/icons'\\).then\\(m=>{const n=[...m.iconNames];console.log\\(n.length\\);console.log\\(n.join\\(' '\\)\\)}\\)\")",
+      "Bash(grep -E \"✓|×|FAIL|PASS|Tests|:\\\\s[a-z0-9-]+'?,?$|\\\\+ \")",
+      "Bash(npm ls *)",
+      "Bash(xargs -I{} sh -c 'echo {} $\\(node -p \"require\\(\\\\\"./{}\\\\\"\\).version\"\\)')",
+      "Bash(git diff *)",
+      "Bash(node -p \"require\\('vite/package.json'\\).version + ' / vitest ' + require\\('vitest/package.json'\\).version + ' peer vite: ' + JSON.stringify\\(require\\('vitest/package.json'\\).peerDependencies\\)\")",
+      "PowerShell(Set-Location 'D:\\\\workspace\\\\sf-react-p01-base-app\\\\frontend'; \\(Get-Content src\\\\pages\\\\auth\\\\ProfilePage.tsx -Raw\\).Replace\\('icon=\"account-circle-outline\"','icon=\"account-outline\"'\\) | Set-Content -NoNewline -Encoding utf8 src\\\\pages\\\\auth\\\\ProfilePage.tsx; \\(Get-Content src\\\\pages\\\\tags\\\\TagsPage.tsx -Raw\\).Replace\\('icon=\"tag-plus-outline\"','icon=\"tag-multiple-outline\"'\\) | Set-Content -NoNewline -Encoding utf8 src\\\\pages\\\\tags\\\\TagsPage.tsx; npx vitest run 2>&1 | Select-String -Pattern 'Test Files|Tests ')",
+      "Bash(grep -n \"style={{\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\\\\b\\\\|<Title\\\\|<Text\\\\b\\\\|const .* = styled\\\\|return \\(\" EmailPreviewPage.tsx LogsPage.tsx components/LogEntryItem.tsx)",
+      "Bash(grep -E \"^\\\\S.*\\\\.tsx?$|^\\\\s+[0-9]+:[0-9]+\")",
+      "Bash(grep -E \"^\\\\S.*tsx?$|^\\\\s+[0-9]+:\")",
+      "Bash(python -I /c/Users/fagathe/AppData/Local/Temp/claude/19a68c2f2d3fee8b/36d3fff1-1b12-4354-87f8-f8fed3a9dea2/scratchpad/codemod/data_model_update.py)",
+      "Bash(grep -n \"isUnlocked\\\\|runToggle\\('toggle-private'\\)\\\\|Rendre\\\\|const runToggle\\\\|import {$\\\\|  Modal,\\\\|  MarkdownViewer,\\\\|<Footer>\\\\|aria-label={post.is_pinned\" src/pages/journal/components/JournalPostCard.tsx)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

@@ -1,14 +1,11 @@
 import { getErrorCode, getErrorMessage } from '@/services/apiError';
 import { fetchLogin, resendVerificationEmail } from '@/services/auth.api';
 import { AuthResponse } from '@/types/auth.types';
-import { Button } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { TextField } from '@/ui/components';
+import { Alert, Button, Link, TextField } from 'core-react/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink } from 'react-router-dom';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { z } from 'zod';
 import { identifierSchema } from '../authSchemas';
 
@@ -26,11 +23,6 @@ const ForgotRow = styled.div`
   justify-content: flex-end;
   margin: ${({ theme }) => `-${theme.spacing[1]} 0 ${theme.spacing[3]}`};
   font-size: ${({ theme }) => theme.typography.sizes.sm};
-
-  a {
-    color: inherit;
-    font-weight: ${({ theme }) => theme.typography.weights.semibold};
-  }
 `;
 
 const AlertWrapper = styled.div`
@@ -91,7 +83,7 @@ export const PasswordLoginForm = ({ onAuthenticated }: PasswordLoginFormProps) =
         <AlertWrapper>
           <Alert variant={isNotVerified ? 'warning' : 'danger'}>{resendMessage ?? apiError}</Alert>
           {isNotVerified && !resendMessage && (
-            <Button type="button" variant="outline" size="sm" loading={isResending} onClick={handleResendVerification}>
+            <Button type="button" $variant="outline" $size="sm" $loading={isResending} onClick={handleResendVerification}>
               Renvoyer l'e-mail de vérification
             </Button>
           )}
@@ -117,10 +109,10 @@ export const PasswordLoginForm = ({ onAuthenticated }: PasswordLoginFormProps) =
       />
 
       <ForgotRow>
-        <RouterLink to="/forgot-password">Mot de passe oublié ?</RouterLink>
+        <Link href="/forgot-password">Mot de passe oublié ?</Link>
       </ForgotRow>
 
-      <Button type="submit" loading={isSubmitting} fullWidth>
+      <Button type="submit" $loading={isSubmitting} $fullWidth>
         Se connecter
       </Button>
     </form>

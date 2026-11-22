@@ -1,57 +1,55 @@
 import { updateAvatar } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Icon } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { Avatar, HelperText, Icon } from 'core-react/ui';
 import React, { useRef, useState } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 const Wrapper = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: ${({ theme }) => theme.spacing[1]};
 `;
 
-const AvatarBox = styled.button`
+const Trigger = styled.button`
   position: relative;
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  border: 2px solid ${({ theme }) => theme.colors.border.default};
-  background-color: ${({ theme }) => theme.colors.background.surfaceHover || '#f3f4f6'};
-  color: ${({ theme }) => theme.colors.text.heading};
-  font-size: 24px;
-  font-weight: 700;
+  display: inline-flex;
   padding: 0;
-  overflow: hidden;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.full};
+  background: none;
   cursor: pointer;
+  box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.background.surface}, 0 0 0 5px ${({ theme }) => theme.colors.primary.subtle};
+
+  &:disabled {
+    cursor: progress;
+  }
+`;
+
+const Overlay = styled.span`
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  border-radius: inherit;
+  background-color: color-mix(in srgb, ${({ theme }) => theme.colors.black} 45%, transparent);
+  color: ${({ theme }) => theme.colors.white};
+  opacity: 0;
+  transition: opacity 0.15s ease;
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  &:hover .overlay {
+  ${Trigger}:hover &,
+  ${Trigger}:focus-visible &,
+  ${Trigger}:disabled & {
     opacity: 1;
   }
 `;
 
-const Overlay = styled.div.attrs({ className: 'overlay' })`
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+const HiddenInput = styled.input`
+  display: none;
 `;
 
+/** Avatar cliquable : ouvre le sélecteur de fichier et envoie la nouvelle photo. */
 export const ChangeAvatarForm: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -61,8 +59,6 @@ export const ChangeAvatarForm: React.FC = () => {
 
   if (!user) return null;
 
-  const initials = (user.username || user.email || '?').slice(0, 2).toUpperCase();
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -70,8 +66,7 @@ export const ChangeAvatarForm: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const updatedUser = await updateAvatar(file);
-      setUser(updatedUser);
+      setUser(await updateAvatar(file));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'envoi de l'avatar");
     } finally {
@@ -82,31 +77,27 @@ export const ChangeAvatarForm: React.FC = () => {
 
   return (
     <Wrapper>
-      <input
+      <HiddenInput
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
-        style={{ display: 'none' }}
         onChange={handleFileChange}
       />
 
-      <AvatarBox
+      <Trigger
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={loading}
+        aria-label="Changer la photo de profil"
         title="Changer la photo de profil"
       >
-        {user.avatar ? <img src={user.avatar} alt={user.username} /> : <span>{initials}</span>}
-        <Overlay>
-          <Icon name={loading ? 'loading' : 'camera-outline'} size={22} />
+        <Avatar src={user.avatar ?? undefined} name={user.username} size="lg" />
+        <Overlay aria-hidden="true">
+          <Icon name={loading ? 'loading' : 'camera-outline'} size={20} spin={loading} />
         </Overlay>
-      </AvatarBox>
+      </Trigger>
 
-      {error && (
-        <Text size="xs" style={{ color: '#dc2626' }}>
-          {error}
-        </Text>
-      )}
+      {error && <HelperText $state="invalid">{error}</HelperText>}
     </Wrapper>
   );
 };

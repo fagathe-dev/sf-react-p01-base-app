@@ -11,6 +11,7 @@ import {
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,
+  JournalSecurityStatus,
   SetJournalPasscodePayload,
   SetJournalPasscodeResponse,
   UpdateProfilePayload,
@@ -263,5 +264,22 @@ export const updateJournalPasscode = async (
     throw toApiError(res, 'Erreur lors de la configuration du code secret');
   }
 
+  return res.data;
+};
+
+/** Statut de la protection du journal (code défini, protection activée). */
+export const fetchJournalSecurityStatus = async (): Promise<JournalSecurityStatus> => {
+  const res = await fetchAPI<JournalSecurityStatus>(`${ACCOUNT_BASE_URL}/journal-passcode/status`);
+  if (!res.ok) throw toApiError(res, 'Impossible de lire la configuration du journal.');
+  return res.data;
+};
+
+/** Active ou désactive la protection par code ; la désactivation exige le code actuel. */
+export const setJournalLock = async (enabled: boolean, passcode?: string): Promise<JournalSecurityStatus> => {
+  const res = await fetchAPI<JournalSecurityStatus>(`${ACCOUNT_BASE_URL}/journal-lock`, {
+    method: 'PUT',
+    body: { enabled, ...(passcode ? { passcode: encodeSecret(passcode) } : {}) },
+  });
+  if (!res.ok) throw toApiError(res, 'Impossible de modifier la protection du journal.');
   return res.data;
 };

@@ -64,6 +64,13 @@ final class AccountController extends AbstractController
         return $this->json($res->data, $res->status, $res->headers, $res->context);
     }
 
+    #[Route('/journal-lock', name: 'set_journal_lock', methods: ['PUT'])]
+    public function setJournalLock(Request $request): JsonResponse
+    {
+        $res = $this->service->setJournalLock($request);
+        return $this->json($res->data, $res->status, $res->headers, $res->context);
+    }
+
     #[Route('/journal-passcode/status', name: 'journal_passcode_status', methods: ['GET'])]
     public function getJournalPasscodeStatus(): JsonResponse
     {

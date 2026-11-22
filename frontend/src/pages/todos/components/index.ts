@@ -1,3 +1,4 @@
+export * from './TodoBoard';
 export * from './TodoCard';
 export * from './TodoCommentCard';
 export * from './TodoCommentForm';
@@ -7,3 +8,4 @@ export * from './TodoFileList';
 export * from './TodoList';
 export * from './TodoListSkeleton';
 export * from './TodoQuickCreateForm';
+export * from './TodoTagFilterBar';

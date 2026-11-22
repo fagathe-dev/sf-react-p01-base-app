@@ -1,14 +1,11 @@
 import { getErrorMessage } from '@/services/apiError';
 import { loginWithCode, requestLoginCode } from '@/services/auth.api';
 import { AuthResponse } from '@/types/auth.types';
-import { Button } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { TextField } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { Alert, Button, Text, TextField } from 'core-react/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { z } from 'zod';
 import { identifierSchema, loginCodeSchema } from '../authSchemas';
 
@@ -34,6 +31,11 @@ const Actions = styled.div`
   justify-content: space-between;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing[2]};
+  margin-top: ${({ theme }) => theme.spacing[3]};
+`;
+
+const PendingNote = styled(Text)`
+  display: block;
   margin-top: ${({ theme }) => theme.spacing[3]};
 `;
 
@@ -147,7 +149,7 @@ export const CodeLoginForm = ({ onAuthenticated }: CodeLoginFormProps) => {
           {...register('username')}
         />
 
-        <Button type="submit" loading={formState.isSubmitting} fullWidth>
+        <Button type="submit" $loading={formState.isSubmitting} $fullWidth>
           Recevoir un code de connexion
         </Button>
       </form>
@@ -182,19 +184,19 @@ export const CodeLoginForm = ({ onAuthenticated }: CodeLoginFormProps) => {
         {...register('code')}
       />
 
-      <Button type="submit" loading={formState.isSubmitting} disabled={expiresIn === 0} fullWidth>
+      <Button type="submit" $loading={formState.isSubmitting} disabled={expiresIn === 0} $fullWidth>
         Se connecter
       </Button>
 
       <Actions>
-        <Button type="button" variant="ghost" size="sm" onClick={handleChangeIdentifier}>
+        <Button type="button" $variant="ghost" $size="sm" onClick={handleChangeIdentifier}>
           Changer d'identifiant
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          loading={isResending}
+          $variant="ghost"
+          $size="sm"
+          $loading={isResending}
           disabled={resendIn > 0 || isResending}
           onClick={handleResend}
         >
@@ -202,9 +204,9 @@ export const CodeLoginForm = ({ onAuthenticated }: CodeLoginFormProps) => {
         </Button>
       </Actions>
 
-      <Text size="xs" color="muted" style={{ marginTop: 12 }}>
+      <PendingNote $size="xs" $color="muted">
         Code envoyé pour <strong>{pending.username}</strong>.
-      </Text>
+      </PendingNote>
     </form>
   );
 };

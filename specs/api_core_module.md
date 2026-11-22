@@ -13,7 +13,7 @@ Architecture, conventions et sécurité partagées par tous les modules de l'API
 | ORM | Doctrine ORM 3 + Migrations ; SGBD **MySQL / MariaDB** (UUID en `BINARY(16)`, `utf8mb4`) |
 | Auth | `lexik/jwt-authentication-bundle` 3 (RS256, clés dans `config/jwt/`) |
 | CORS | `nelmio/cors-bundle` |
-| Socle maison | `fagathe-dev/core-php` (dépôt Git privé) : réponses, logs, upload, mailer, commandes |
+| Socle maison | `fagathe-dev/core-php` (`>= 1.1.5`, dépôt Git privé) : réponses, logs, upload, types de fichiers, mailer, commandes |
 | Dev | maker-bundle, doctrine-fixtures, faker |
 
 ## 3. Architecture
@@ -27,14 +27,14 @@ Requête → Controller (mince) → Service (logique) → Repository / EntityMan
 | Couche | Règle |
 |---|---|
 | **Controller** | Attributs `#[Route]` + `#[IsGranted]`. Ne contient pas de logique : délègue au service et convertit son retour via `$this->json($res->data, $res->status, $res->headers, $res->context)`. |
-| **Service** | `final`, injecté par autowiring. Utilise les traits `core-php` : `ResponseTrait` (réponses), `DatetimeTrait` (`now()`, `isPastDate()`), `LoggerTrait` (`generateLog()`), `RequestTrait` (`getOrigin()`, `getUserAgent()`). Récupère l'utilisateur via `Security::getUser()`. |
+| **Service** | `final`, injecté par autowiring. Utilise les traits `core-php` : `ResponseTrait` (réponses), `DatetimeTrait` (`now()`, `isPastDate()`), `LoggerTrait` (`generateLog()`), `RequestTrait` (`getOrigin()`, `getUserAgent()`), `FileTrait` (`matchMimeType()`, `formatFileSize()`). Récupère l'utilisateur via `Security::getUser()`. |
 | **DTO** | Classes `final` à propriétés publiques + contraintes `Assert`. Désérialisées par le serializer puis validées. |
-| **Entity** | Attributs Doctrine ; exposition contrôlée par `#[Groups]`. |
+| **Entity** | Attributs Doctrine ; exposition contrôlée par `#[Groups]`. Héritage via `AbstractTextEntry` (posts du journal) et `AbstractFile` (pièces jointes). |
 | **Repository** | `save($entity, flush, isCreation)` / `remove($entity, flush)` retournant `bool`. |
 
 - Toutes les routes sont préfixées par **`/api`** (`config/routes.yaml`).
-- Paramètres liés (`config/services.yaml`) : `$projectDir`, `$defaultUri` (= `DEFAULT_URI`). `FRONTEND_URL` est injecté via `#[Autowire('%env(default::FRONTEND_URL)%')]`.
-- Les services de `core-php` sont enregistrés via le bundle `CorePhpBundle` et `services.yaml`.
+- Paramètre lié (`config/services.yaml`) : `string $defaultUri: "%env(DEFAULT_URI)%"`. `FRONTEND_URL` est injecté via `#[Autowire('%env(default::FRONTEND_URL)%')]`.
+- Les services de `core-php` sont enregistrés via le bundle `CorePhpBundle` (seul `Fagathe\CorePhp\Generator\TokenGenerator` est déclaré explicitement dans `services.yaml`).
 
 ## 4. Conventions d'échange
 
@@ -42,7 +42,7 @@ Requête → Controller (mince) → Service (logique) → Repository / EntityMan
 - JSON en entrée et en sortie (`Content-Type: application/json`). Upload : `multipart/form-data`.
 - Identifiants : **UUID v7** (générés dans le constructeur des entités).
 - Dates : ISO 8601 (`2026-10-27T09:12:00+01:00`), fuseau `Europe/Paris` (`framework.serializer.default_context`).
-- Noms de champs : ceux des propriétés (camelCase pour le socle).
+- Noms de champs : ceux des propriétés (camelCase pour le socle, `Tag`, `Todo` et `JournalTag` ; snake_case pour `AbstractTextEntry` / `JournalPost` / `JournalLocation`).
 
 ### 4.2 Secrets encodés
 Les secrets saisis par l'utilisateur transitent **encodés en base64 UTF-8** (front : `encodeSecret`, API : `SecretDecoder`). Le décodage a lieu **avant** validation et hash.
@@ -53,6 +53,8 @@ Les secrets saisis par l'utilisateur transitent **encodés en base64 UTF-8** (fr
 | `POST /auth/login` | `password` |
 | `POST /auth/reset-password` | `password` |
 | `PUT /account/password` | `currentPassword`, `newPassword` |
+| `PUT /account/journal-passcode` | `currentPasscode`, `passcode` |
+| `POST /account/journal-passcode/verify` | `passcode` |
 
 Base64 invalide (mode strict) ou UTF-8 invalide → **400** `Format de données invalide.`
 
@@ -148,7 +150,19 @@ erDiagram
     }
 ```
 
-Groupe de sérialisation exposé : `user.read` = `id, email, roles, username, firstname, lastname, avatar, createdAt, updatedAt`. Jamais exposés : `password`, `isVerified`, `emailVerifiedAt`.
+Groupe de sérialisation exposé : `user.read` = `id, email, roles, username, firstname, lastname, avatar, createdAt, updatedAt`. Jamais exposés : `password`, `isVerified`, `emailVerifiedAt`, `journalPasscode`, `jCodeToken`.
+
+Pour la **structure de données complète de l'application** (incluant `Tag`, `Todo`, `TodoComment`, `TodoFile`, `JournalPost`, `JournalTag`, `JournalMedia`, `JournalLocation`, `AbstractTextEntry` et `AbstractFile`), voir **[data_model.md](data_model.md)**.
+
+## 6.1 Gestion des pièces jointes — `AttachmentFileService`
+
+Service transversal (`src/Service/AttachmentFileService.php`) gérant la validation, l'écriture sur disque et la persistance en base des fichiers rattachés aux entités métier (`Todo` → `TodoFile`, `JournalPost` → `JournalMedia`) :
+- Taille maximale : **50 Mo** (`MAX_SIZE = 50 * 1024 * 1024`).
+- Types MIME autorisés : `MimeType::getSupportedMimetypes()` pour `Todo` ; `IMAGE_MIMES + AUDIO_MIMES + VIDEO_MIMES` pour `JournalPost`.
+- Dossier de stockage : `public/uploads/<todos|journal>/<userId>/`.
+- Catégorisation automatique du fichier en `FileTypeEnum` (`core-php`) via `$this->matchMimeType($mimeType)`.
+- Exposition en **URL absolue** (`DEFAULT_URI` + chemin relatif).
+- Suppression unitaire (`delete(AbstractFile)`) ou par entité parente (`deleteByTarget(Todo|JournalPost)`).
 
 ## 7. Briques `core-php` utilisées
 
@@ -156,9 +170,10 @@ Groupe de sérialisation exposé : `user.read` = `id, email, roles, username, fi
 |---|---|
 | `Http\ResponseTrait` | `sendJson`, `sendNoContent`, `sendViolations` |
 | `Trait\LoggerTrait` | Logs JSON par classe (voir [log_module.md](log_module.md)) |
+| `File\FileTrait`, `File\MimeType`, `File\FileTypeEnum` | Qualification du type de fichier et formatage de taille |
 | `Mailer\AbstractMailerHandler` | Base des handlers e-mail (voir [mailer_module.md](mailer_module.md)) |
-| `Uploader\UploaderService` / `UploaderValidationService` | Upload de l'avatar |
-| `Generator\TokenGenerator` | Jetons aléatoires |
+| `Uploader\UploaderService` / `UploaderValidationService` | Upload de l'avatar et des pièces jointes métier |
+| `Generator\TokenGenerator` | Jetons aléatoires (`jCodeToken`) |
 | `Command\CreateAdminUserCommand` + `AdminUserManagerInterface` | Création d'admins (voir [auth_module.md](auth_module.md)) |
 | `Command\LogFilesRotationCommand` | Purge des logs |
 | Templates `@CorePhp/layout.html.twig` + `components/*` | Mise en page des e-mails |
@@ -166,10 +181,10 @@ Groupe de sérialisation exposé : `user.read` = `id, email, roles, username, fi
 ## 8. Écarts & points ouverts
 
 - `doctrine.yaml` déclare une préférence d'identité PostgreSQL alors que la base est MySQL (sans effet, à nettoyer).
-- `KnpPaginatorBundle` est activé et `PaginationTrait` injecté dans certains services, mais aucune pagination n'est appliquée.
+- `PaginationTrait` (de `core-php`, basé sur `KnpPaginatorInterface`) est utilisé dans `JournalService`, `NoteService` et `TagService`, mais les requêtes retournent directement `getResult()` sans pagination effective.
 - La vérification « utilisateur authentifié » est dupliquée dans chaque méthode de service (`getAuthenticatedUser()` répété) alors que le firewall la garantit déjà : candidate à factorisation.
 - Les 403 du voter renvoient le format d'erreur Symfony par défaut, différent de `{ message }`.
 
 ## 9. Sources
 
-`api/config/packages/{security,framework,doctrine,nelmio_cors,lexik_jwt_authentication}.yaml`, `api/config/{routes,services}.yaml`, `api/src/Security/Voter/OwnerVoter.php`, `api/src/Service/SecretDecoder.php`, `vendor/fagathe-dev/core-php/src/Http/ResponseTrait.php`.
+`api/config/packages/{security,framework,doctrine,nelmio_cors,lexik_jwt_authentication}.yaml`, `api/config/{routes,services}.yaml`, `api/src/Security/Voter/OwnerVoter.php`, `api/src/Service/{SecretDecoder,AttachmentFileService}.php`, `vendor/fagathe-dev/core-php/src/Http/ResponseTrait.php`.

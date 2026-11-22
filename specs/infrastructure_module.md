@@ -47,7 +47,37 @@ npm ci
 npm run dev                            # http://localhost:5173
 ```
 
-Comptes de fixtures : `test@example.com` / `testuser` (ROLE_USER) et `admin@example.com` / `admin` (ROLE_ADMIN). Les domaines `example.com` étant refusés par le contrôle de délivrabilité, désactiver `core_php.email.check_deliverability` en dev pour tester les e-mails ([mailer_module.md](mailer_module.md)).
+Comptes de fixtures (`src/DataFixtures/AppFixtures.php`) — 23 à 45 utilisateurs :
+- `test@example.com` / `testuser` (`ROLE_USER`), code secret du journal : `0000`
+- compte admin (`admin`, `ROLE_ADMIN`) : e-mail lu dans **`FIXTURES_ADMIN_EMAIL`** (déclarée vide dans `.env`, valeur réelle dans `.env.local`), `admin@example.com` à défaut ; code `0000`, protection du journal désactivée.
+- Protection des contenus privés (`journalLockEnabled`) : désactivée pour ~80 % des autres comptes (`random_choices([false, true], [80, 20])` de core-php).
+- Par utilisateur : 5–8 tags de tâches (dont 1–2 jamais utilisés, pour vérifier le filtre), 19–31 tâches (échéances variées, 1–4 commentaires, pièces jointes Markdown réelles écrites dans `public/uploads/todos/<userId>/`), 5–8 tags de journal, 19–31 posts Markdown (~30 % privés ; épinglés, enregistrés, 3 souvenirs datés du même jour il y a 1 et 2 ans, 1–4 suites pour ~30 % des posts, lieux).
+- Mot de passe commun : `Password123!`. Les domaines `example.com` étant refusés par le contrôle de délivrabilité, désactiver `core_php.email.check_deliverability` en dev pour tester les e-mails ([mailer_module.md](mailer_module.md)).
+
+### Vérifier sans toucher à sa base de dev
+
+L'environnement `test` ne charge pas `.env.local` : il utilise la `DATABASE_URL` de `.env` avec le suffixe `_test` (`doctrine.yaml`).
+
+```bash
+APP_ENV=test php bin/console doctrine:database:create --if-not-exists
+APP_ENV=test php bin/console doctrine:schema:create
+APP_ENV=test php bin/console doctrine:fixtures:load -n
+APP_ENV=test php bin/console doctrine:schema:validate
+```
+
+### Migration Journal v2
+
+Passage d'une base existante (ancien journal par blocs + module Notes) au nouveau schéma, **avec reprise des données**. Scripts dans `api/migrations/`, à exécuter dans l'ordre sur une base sauvegardée :
+
+| Script | Rôle |
+|---|---|
+| `migration_01_backup_tmp.sql` | Crée `bloc_content` vide si la base ne l'a jamais eue ; copie `entry`, `bloc_content`, `entry_media`, `location`, `note`, `note_file` dans des tables `*_tmp` ; prépare la correspondance Tag → JournalTag (slug translittéré, un enregistrement par tag) |
+| `migration_02_schema.sql` | Supprime les tables Notes et de l'ancien journal ; ajoute `user.journal_lock_enabled` (`0` par défaut) ; crée `journal_location`, `journal_tag`, `journal_post`, `journal_post_tag`, `journal_media` avec **le DDL exact de Doctrine** (noms d'index et de clés étrangères) |
+| `migration_03_restore_and_cleanup.sql` | `group_concat_max_len` relevé ; entrées → posts **privés** (titre `##`, ancien `content`, blocs texte / citation / image / galerie / vidéo en Markdown), tags (`-2`, `-3` sur les slugs homonymes), médias et lieux repris ; contrôle d'intégrité, puis purge des `*_tmp` |
+
+Après les trois scripts, `doctrine:schema:validate` est vert. Vérifier le contrôle d'intégrité de l'étape 3 **avant** sa section de purge. Les fichiers des médias migrés restent dans `uploads/entries/…`, ceux des notes dans `uploads/notes/…` (à supprimer à la main si souhaité).
+
+> Les versions d'origine de ces scripts sont conservées dans `tmp/` à la racine pour comparaison ; elles échouent dès qu'un tag est utilisé par plusieurs entrées (`SELECT DISTINCT … UUID()`), tronquent les contenus longs et ignorent `entry.content`.
 
 ## 4. Hébergement & déploiement
 
@@ -102,11 +132,11 @@ Le dossier temporaire est supprimé en sortie (succès ou échec) ; le script s'
 | Tests front | `npm test` (Vitest) — lancé par Husky en `pre-commit` (`npm --prefix frontend run test`) |
 | Build front | `npm run build` (`tsc -b && vite build`) |
 | Style | `.editorconfig` racine, Prettier (simple quotes, 120 colonnes, LF) |
-| Tests API | aucun (`autoload-dev` déclare `tests/` mais le dossier n'existe pas) |
+| Tests API | aucun test PHPUnit (`tests/` absent) ; la migration v2 a été validée par un test HTTP de bout en bout et un banc d'essai des scripts SQL sur la base `test` |
 
 ## 8. Écarts & points ouverts
 
-- **`/migrations/` est ignoré par Git** : le clone de déploiement ne contient aucune migration, `--migrations` est sans effet. Versionner les migrations.
+- **`/migrations/` est ignoré par Git** : le clone de déploiement ne contient aucune migration, `--migrations` est sans effet, et les scripts SQL de la migration Journal v2 ne sont pas versionnés. Versionner les migrations (ou au moins `!/migrations/*.sql`).
 - `frontend/.env.example` : `VITE_API_URL` sans `/api`.
 - `api/.env.dev` versionné contient un `APP_SECRET` : à régénérer par projet.
 - Aucun test automatisé côté API ; pas de CI.

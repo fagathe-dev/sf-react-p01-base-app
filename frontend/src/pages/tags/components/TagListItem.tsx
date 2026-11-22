@@ -1,81 +1,54 @@
-import { ColorEnum, Tag } from '@/types/tag.types';
-import { Button } from '@/ui/components';
-import { Icon } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { TagBadge } from '@/components/TagBadge';
+import { Tag } from '@/types/tag.types';
+import { Flex, IconButton, Text } from 'core-react/ui';
 import React from 'react';
-import styled from 'styled-components';
-import { TagPill } from './TagPill';
+import { styled } from 'styled-components';
 
-const Row = styled.div`
+const Row = styled.li`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[4]}`};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
   gap: ${({ theme }) => theme.spacing[3]};
+  padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[4]}`};
+  transition: background-color 0.12s ease;
 
-  &:last-child {
-    border-bottom: none;
+  & + & {
+    border-top: 1px solid ${({ theme }) => theme.colors.border.default};
+  }
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.background.surfaceHover};
   }
 `;
 
 const Info = styled.div`
   display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing[4]};
   flex: 1;
-  min-width: 0;
-`;
-
-const Actions = styled.div`
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing[2]};
+  gap: ${({ theme }) => theme.spacing[3]};
+  min-width: 0;
 `;
 
 interface TagListItemProps {
   tag: Tag;
   onEdit: (tag: Tag) => void;
-  onDelete: (id: string) => void;
+  onDelete: (tag: Tag) => void;
 }
 
-export const TagListItem: React.FC<TagListItemProps> = ({
-  tag,
-  onEdit,
-  onDelete,
-}) => {
-  return (
-    <Row>
-      <Info>
-        <TagPill $color={(tag.color as ColorEnum) || 'blue'}>
-          {tag.name}
-        </TagPill>
-        {tag.description && (
-          <Text size="xs" color="muted">
-            {tag.description}
-          </Text>
-        )}
-      </Info>
-      <Actions>
-        <Button
-          variant="ghost"
-          size="sm"
-          type="button"
-          onClick={() => onEdit(tag)}
-          aria-label="Modifier le tag"
-        >
-          <Icon name="pencil" size={16} />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          type="button"
-          onClick={() => onDelete(tag.id)}
-          aria-label="Supprimer le tag"
-        >
-          <Icon name="trash-can-outline" size={16} />
-        </Button>
-      </Actions>
-    </Row>
-  );
-};
+export const TagListItem: React.FC<TagListItemProps> = ({ tag, onEdit, onDelete }) => (
+  <Row>
+    <Info>
+      <TagBadge color={tag.color}>{tag.name}</TagBadge>
+      {tag.description && (
+        <Text $size="sm" $color="muted">
+          {tag.description}
+        </Text>
+      )}
+    </Info>
+    <Flex $align="center" $gap="0.25rem">
+      <IconButton name="pencil-outline" variant="ghost" size="sm" aria-label={`Modifier le tag ${tag.name}`} onClick={() => onEdit(tag)} />
+      <IconButton name="trash-can-outline" variant="ghost" size="sm" aria-label={`Supprimer le tag ${tag.name}`} onClick={() => onDelete(tag)} />
+    </Flex>
+  </Row>
+);

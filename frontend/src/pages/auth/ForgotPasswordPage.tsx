@@ -1,14 +1,10 @@
 import { getErrorMessage } from '@/services/apiError';
 import { requestPasswordReset } from '@/services/auth.api';
-import { Button } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { TextField } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { AuthCard } from '@/components/AuthCard';
+import { Alert, Button, Link, Text, TextField } from 'core-react/ui';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink } from 'react-router-dom';
 import { z } from 'zod';
 
 const forgotPasswordSchema = z.object({
@@ -41,26 +37,22 @@ export const ForgotPasswordPage = () => {
   };
 
   return (
-    <Card elevation="sm">
-      <Card.Header>
-        <Card.Title>Mot de passe oublié</Card.Title>
-      </Card.Header>
-      <Card.Body>
+    <AuthCard
+      title="Mot de passe oublié"
+      subtitle="Nous vous enverrons un lien pour en choisir un nouveau."
+      footer={<Link href="/login">Retour à la connexion</Link>}
+    >
         {successMessage ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <>
             <Alert variant="success">{successMessage}</Alert>
-            <Text size="sm" color="muted">
+            <Text $size="sm" $color="muted">
               Le lien est valable 24 heures et ne peut être utilisé qu'une seule fois. Pensez à vérifier vos courriers
               indésirables.
             </Text>
-          </div>
+          </>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            {apiError && (
-              <div style={{ marginBottom: '1rem' }}>
-                <Alert variant="danger">{apiError}</Alert>
-              </div>
-            )}
+            {apiError && <Alert variant="danger">{apiError}</Alert>}
 
             <TextField
               label="Adresse e-mail"
@@ -72,17 +64,11 @@ export const ForgotPasswordPage = () => {
               {...register('email')}
             />
 
-            <Button type="submit" loading={isSubmitting} fullWidth>
+            <Button type="submit" $loading={isSubmitting} $fullWidth>
               Envoyer le lien de réinitialisation
             </Button>
           </form>
         )}
-      </Card.Body>
-      <Card.Footer style={{ justifyContent: 'center' }}>
-        <RouterLink to="/login" style={{ color: 'inherit', fontWeight: 600 }}>
-          Retour à la connexion
-        </RouterLink>
-      </Card.Footer>
-    </Card>
+    </AuthCard>
   );
 };

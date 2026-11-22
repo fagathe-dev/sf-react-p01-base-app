@@ -1,57 +1,65 @@
-import { Icon, Text, ThemeModeSwitcher } from '@/ui/components';
+import { Text, ThemeModeSwitcher } from 'core-react/ui';
 import { Outlet } from 'react-router-dom';
-import styled, { useTheme } from 'styled-components';
+import { styled } from 'styled-components';
 
-const AuthContainer = styled.div`
-  min-height: 100vh;
+const Root = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: ${({ theme }) => theme.spacing[4]};
-  background-color: ${({ theme }) => theme.colors.background.body};
-  position: relative;
+  justify-content: center;
+  min-height: 100vh;
+  padding: ${({ theme }) => `${theme.spacing[7]} ${theme.spacing[4]}`};
+  background:
+    radial-gradient(60rem 30rem at 50% -10%, ${({ theme }) => theme.colors.primary.subtle}, transparent 70%),
+    ${({ theme }) => theme.colors.background.body};
 `;
 
-const ThemeToggleWrapper = styled.div`
+const ThemeSwitch = styled.div`
   position: absolute;
   top: ${({ theme }) => theme.spacing[4]};
   right: ${({ theme }) => theme.spacing[4]};
 `;
 
-const BrandHeader = styled.div`
+const Brand = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[2]};
-  margin-bottom: ${({ theme }) => theme.spacing[4]};
+  margin-bottom: ${({ theme }) => theme.spacing[5]};
   user-select: none;
 `;
 
-const FormBox = styled.div`
-  width: 100%;
-  max-width: 420px;
+const BrandMark = styled.img`
+  width: 3rem;
+  height: 3rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  box-shadow: ${({ theme }) => theme.shadows.md};
 `;
 
-export const AuthLayout = () => {
-  const theme = useTheme();
+const Content = styled.div`
+  width: 100%;
+  max-width: 26rem;
+`;
 
-  return (
-    <AuthContainer>
-      <ThemeToggleWrapper>
-        <ThemeModeSwitcher />
-      </ThemeToggleWrapper>
+/**
+ * Mise en page des écrans publics (connexion, inscription, liens reçus par e-mail).
+ */
+export const AuthLayout = () => (
+  <Root>
+    <ThemeSwitch>
+      <ThemeModeSwitcher size="sm" />
+    </ThemeSwitch>
 
-      <BrandHeader>
-        <Icon name="check-decagram" size={40} color={theme.colors.primary.base} />
-        <Text weight="bold" size="xl" color="secondary">
-          Base App
-        </Text>
-      </BrandHeader>
+    <Brand>
+      <BrandMark src="/images/logo.webp" alt="" />
+      <Text $size="lg" $weight="bold">
+        Mon espace
+      </Text>
+    </Brand>
 
-      <FormBox>
-        <Outlet />
-      </FormBox>
-    </AuthContainer>
-  );
-};
+    <Content>
+      <Outlet />
+    </Content>
+  </Root>
+);

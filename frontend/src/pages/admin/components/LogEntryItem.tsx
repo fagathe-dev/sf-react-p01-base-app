@@ -1,8 +1,6 @@
 import { LogEntry } from '@/types/log.types';
-import { Badge } from '@/ui/components';
-import { Icon } from '@/ui/components';
-import { Accordion } from '@/ui/components';
-import styled, { css } from 'styled-components';
+import { Accordion, Badge, Icon } from 'core-react/ui';
+import { styled, css } from 'styled-components';
 import { LogExceptionDetails } from './LogExceptionDetails';
 import {
   contextValue,
@@ -48,6 +46,10 @@ const HeaderMessage = styled.span`
   flex-basis: 100%;
   color: ${({ theme }) => theme.colors.text.heading};
   overflow-wrap: anywhere;
+`;
+
+const MethodBadge = styled(Badge)`
+  margin-right: ${({ theme }) => theme.spacing[2]};
 `;
 
 const Section = styled.div`
@@ -162,7 +164,7 @@ export const LogEntryItem = ({ log, itemKey }: LogEntryItemProps) => {
 
   const header = (
     <HeaderLine>
-      <Badge variant={level ? LEVEL_VARIANTS[level] : 'neutral'}>
+      <Badge $variant={level ? LEVEL_VARIANTS[level] : 'neutral'}>
         <Icon name={level ? LEVEL_ICONS[level] : 'help-circle-outline'} size={14} />
         {level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Inconnu'}
       </Badge>
@@ -285,9 +287,9 @@ export const LogEntryItem = ({ log, itemKey }: LogEntryItemProps) => {
                     <dt>Requête</dt>
                     <dd>
                       {method && (
-                        <Badge variant={METHOD_VARIANTS[method.toUpperCase()] ?? 'neutral'} style={{ marginRight: 8 }}>
+                        <MethodBadge $variant={METHOD_VARIANTS[method.toUpperCase()] ?? 'neutral'}>
                           {method}
-                        </Badge>
+                        </MethodBadge>
                       )}
                       {url && <Mono>{url}</Mono>}
                       {referer && (

@@ -1,20 +1,10 @@
 import { getErrorMessage } from '@/services/apiError';
 import { fetchLogFile, fetchLogTree } from '@/services/log.api';
 import { LogDate, LogEntry, LogLevel } from '@/types/log.types';
-import { Badge } from '@/ui/components';
-import { Button } from '@/ui/components';
-import { SegmentedControl } from '@/ui/components';
-import { Accordion } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { EmptyState } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { Loading } from '@/ui/components';
-import { Input } from '@/ui/components';
-import { Select } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { PageHeader } from '@/components/PageHeader';
+import { Accordion, Alert, Badge, Button, Card, EmptyState, Icon, Input, Loading, SegmentedControl, Select, Title } from 'core-react/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { LogEntryItem } from './components/LogEntryItem';
 import { formatLogDate, LOG_LEVELS } from './components/logFormat';
 import { LogTree } from './components/LogTree';
@@ -27,12 +17,9 @@ const Container = styled.div`
   gap: ${({ theme }) => theme.spacing[4]};
 `;
 
-const HeaderRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing[3]};
+const FilePath = styled(Title)`
+  margin-bottom: 0;
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
 `;
 
 const Layout = styled.div`
@@ -165,17 +152,17 @@ export const LogsPage = () => {
 
   return (
     <Container>
-      <HeaderRow>
-        <div>
-          <Title as="h2">Logs de l'API</Title>
-          <Text color="muted" size="sm">
-            Journaux JSON générés par le Logger, groupés par date et par fichier
-          </Text>
-        </div>
-        <Button type="button" variant="outline" onClick={handleRefresh} loading={isTreeLoading || isFileLoading}>
-          Actualiser
-        </Button>
-      </HeaderRow>
+      <PageHeader
+        title="Logs de l'API"
+        description="Journaux JSON générés par le Logger, groupés par date et par fichier."
+        icon="text-box-search-outline"
+        actions={
+          <Button type="button" $variant="outline" onClick={handleRefresh} $loading={isTreeLoading || isFileLoading}>
+            <Icon name="restore" size={16} />
+            Actualiser
+          </Button>
+        }
+      />
 
       {error && <Alert variant="danger">{error}</Alert>}
 
@@ -223,10 +210,8 @@ export const LogsPage = () => {
               ) : (
                 <>
                   <FileTitle>
-                    <Title as="h4" style={{ margin: 0 }}>
-                      {selectedPath.replaceAll('.', ' / ')}
-                    </Title>
-                    <Badge variant="neutral" pill>
+                    <FilePath as="h2">{selectedPath.replaceAll('.', ' / ')}</FilePath>
+                    <Badge $variant="neutral" $pill>
                       {filteredLogs.length} / {logs.length}
                     </Badge>
                   </FileTitle>

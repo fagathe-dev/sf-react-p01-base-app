@@ -8,8 +8,10 @@ import {
 import { toApiError } from './apiError';
 import { fetchAPI } from './fetchAPI';
 
-export const fetchTodos = async (): Promise<Todo[]> => {
-  const res = await fetchAPI<Todo[]>('/todos');
+/** Liste des tâches, éventuellement filtrée par tag (`?tagId=`). */
+export const fetchTodos = async (filters: { tagId?: string | null } = {}): Promise<Todo[]> => {
+  const query = filters.tagId ? `?tagId=${encodeURIComponent(filters.tagId)}` : '';
+  const res = await fetchAPI<Todo[]>(`/todos${query}`);
   if (!res.ok) throw toApiError(res, 'Erreur lors du chargement des tâches.');
   return res.data ?? [];
 };

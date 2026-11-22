@@ -18,6 +18,10 @@ doctrine:
                 alias: App
         controller_resolver:
             auto_mapping: false
+        dql:
+            string_functions:
+                # MySQL : utilisé par l'onglet « Souvenirs » du journal (même jour/mois, années précédentes)
+                DATE_FORMAT: App\Doctrine\Query\DateFormat
 
 when@test:
     doctrine:

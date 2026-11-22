@@ -1,7 +1,7 @@
 import { initThemeStore } from '@/hooks/useTheme';
 import { router } from '@/router';
 import { useAuthStore } from '@/stores/auth.store';
-import { appTheme, cssVariables } from '@/ui/theme';
+import { appTheme, cssVariables } from '@/theme';
 import { UIProvider } from 'core-react';
 import { GlobalStyle, ToastContainer } from 'core-react/ui';
 import { useEffect } from 'react';

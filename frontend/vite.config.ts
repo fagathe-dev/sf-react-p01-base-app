@@ -9,9 +9,6 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
-  optimizeDeps: {
-    include: ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-  },
   test: {
     environment: 'jsdom',
     globals: true,

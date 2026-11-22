@@ -1,6 +1,6 @@
 import { Todo } from '@/types/todo.types';
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { TodoCard } from './TodoCard';
 
 const Wrapper = styled.div`

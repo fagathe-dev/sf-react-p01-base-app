@@ -85,6 +85,14 @@ export interface SetJournalPasscodePayload {
   passcode: string;
 }
 
+/** Protection par code des contenus privés du journal (GET /account/journal-passcode/status). */
+export interface JournalSecurityStatus {
+  hasPasscode: boolean;
+  lockEnabled: boolean;
+  /** Code défini ET protection activée : seul cas où l'onglet Privé exige le code */
+  lockActive: boolean;
+}
+
 export interface SetJournalPasscodeResponse {
   user: User;
   message: string;

@@ -1,11 +1,11 @@
-import { EntryLocation } from '@/types/journal.types';
+import { JournalLocation } from '@/types/journal.types';
 import { useCallback, useState } from 'react';
 
 export type GeolocationStatus = 'idle' | 'loading' | 'success' | 'error';
 
-export const useGeolocation = (initialLocation?: EntryLocation | null) => {
+export const useGeolocation = (initialLocation?: JournalLocation | null) => {
   const [status, setStatus] = useState<GeolocationStatus>(initialLocation ? 'success' : 'idle');
-  const [location, setLocation] = useState<EntryLocation | null>(initialLocation ?? null);
+  const [location, setLocation] = useState<JournalLocation | null>(initialLocation ?? null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const requestLocation = useCallback(() => {
@@ -40,7 +40,7 @@ export const useGeolocation = (initialLocation?: EntryLocation | null) => {
           const shortLabel = [city, country].filter(Boolean).join(', ');
           const name = shortLabel || data.display_name || `${latitude}, ${longitude}`;
 
-          const locationObj: EntryLocation = {
+          const locationObj: JournalLocation = {
             name,
             latitude,
             longitude,
@@ -53,7 +53,7 @@ export const useGeolocation = (initialLocation?: EntryLocation | null) => {
           setStatus('success');
         } catch {
           // Si Nominatim échoue, on conserve quand même les coordonnées GPS
-          const fallbackLocation: EntryLocation = {
+          const fallbackLocation: JournalLocation = {
             name: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
             latitude,
             longitude,

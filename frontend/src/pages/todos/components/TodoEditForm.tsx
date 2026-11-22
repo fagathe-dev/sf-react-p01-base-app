@@ -1,104 +1,68 @@
-// src/pages/todos/components/TodoEditForm.tsx
 import { TagSelectDropdown } from '@/pages/tags/components';
 import { fetchTags } from '@/services/tag.api';
-import {
-  addTodoComment,
-  deleteTodoComment,
-  deleteTodoFile,
-  updateTodo,
-} from '@/services/todo.api';
+import { addTodoComment, deleteTodoComment, deleteTodoFile, updateTodo } from '@/services/todo.api';
 import { Tag } from '@/types/tag.types';
 import { Todo, UpdateTodoPayload } from '@/types/todo.types';
-import { Icon } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { MarkdownEditor } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { Alert, Button, Drawer, Flex, Icon, Label, MarkdownEditor, Text } from 'core-react/ui';
+import { DateFormatter } from 'core-ts';
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { TodoCommentCard } from './TodoCommentCard';
 import { TodoCommentForm } from './TodoCommentForm';
 import { TodoDueDateSelector } from './TodoDueDateSelector';
-import { TodoEditFooter } from './TodoEditFooter';
 import { TodoFileList } from './TodoFileList';
 
-const Backdrop = styled.div`
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  z-index: 1050;
-  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
-    display: none;
-  }
-`;
-
-const Drawer = styled.aside`
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+const NameInput = styled.input`
   width: 100%;
-  max-width: 400px;
-  background-color: ${({ theme }) => theme.colors.background.surface};
-  border-left: 1px solid ${({ theme }) => theme.colors.border.default};
-  box-shadow: ${({ theme }) => theme.shadows.lg};
-  z-index: 1060;
-  display: flex;
-  flex-direction: column;
-  padding: ${({ theme }) => theme.spacing[4]};
-  gap: ${({ theme }) => theme.spacing[3]};
-  overflow-y: auto;
-  box-sizing: border-box;
-
-  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
-    max-width: 100%;
-    left: 0;
-    height: 100dvh;
-    border-left: none;
-  }
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: ${({ theme }) => theme.spacing[2]};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
-`;
-
-const TitleInput = styled.input`
-  font-size: ${({ theme }) => theme.typography.sizes.base};
-  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+  padding: ${({ theme }) => `${theme.spacing[1]} 0`};
   border: none;
   border-bottom: 2px solid transparent;
-  background: transparent;
   outline: none;
+  background: transparent;
   color: ${({ theme }) => theme.colors.text.heading};
+  font-family: inherit;
+  font-size: ${({ theme }) => theme.typography.sizes.lg};
+  font-weight: ${({ theme }) => theme.typography.weights.semibold};
+
   &:focus {
-    border-color: ${({ theme }) => theme.colors.primary.base};
+    border-bottom-color: ${({ theme }) => theme.colors.primary.base};
   }
 `;
 
-// Conteneur de l'éditeur Markdown : sert à détecter la sortie du champ (enregistrement automatique)
-const DescriptionField = styled.div`
-  width: 100%;
+const Field = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing[2]};
 `;
 
-export const TodoEditForm: React.FC<{
+const Footer = styled(Drawer.Footer)`
+  justify-content: space-between;
+`;
+
+/** Champ du volet : libellé du kit puis contenu. */
+const DrawerField: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <Field>
+    <Label as="h3">{label}</Label>
+    {children}
+  </Field>
+);
+
+interface TodoEditFormProps {
   todo: Todo;
   onClose: () => void;
   onUpdated: (t: Todo) => void;
-  onDelete: (id: string) => void;
-}> = ({ todo, onClose, onUpdated, onDelete }) => {
+  onDelete: (todo: Todo) => void;
+}
+
+/**
+ * Volet latéral (Drawer du kit) d'une tâche : enregistrement automatique à la sortie des champs.
+ * Le parent le monte avec `key={todo.id}` : ouvrir une autre tâche repart de champs neufs.
+ */
+export const TodoEditForm: React.FC<TodoEditFormProps> = ({ todo, onClose, onUpdated, onDelete }) => {
   const [name, setName] = useState(todo.name);
   const [desc, setDesc] = useState(todo.description || '');
   const [tags, setTags] = useState<Tag[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setName(todo.name);
-    setDesc(todo.description || '');
-    setErrorMessage(null);
-  }, [todo.id]);
 
   useEffect(() => {
     fetchTags()
@@ -106,183 +70,108 @@ export const TodoEditForm: React.FC<{
       .catch(() => setTags([]));
   }, []);
 
-  const save = async (payload: UpdateTodoPayload) => {
+  const run = async (action: () => Promise<void>, fallback: string) => {
     try {
       setErrorMessage(null);
-      const updated = await updateTodo(todo.id, payload);
-      onUpdated(updated);
+      await action();
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.'
-      );
+      setErrorMessage(err instanceof Error ? err.message : fallback);
     }
   };
 
-  const handleUpload = async (files: FileList) => {
-    try {
-      setErrorMessage(null);
+  const save = (payload: UpdateTodoPayload) =>
+    run(async () => onUpdated(await updateTodo(todo.id, payload)), 'Erreur lors de la sauvegarde.');
+
+  const handleUpload = (files: FileList) =>
+    run(async () => {
       const data = new FormData();
       Array.from(files).forEach((f) => data.append('files[]', f));
-      const updated = await updateTodo(todo.id, data);
-      onUpdated(updated);
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : "Erreur lors de l'upload du fichier."
-      );
-    }
-  };
+      onUpdated(await updateTodo(todo.id, data));
+    }, "Erreur lors de l'envoi du fichier.");
 
-  const handleDeleteFile = async (fId: string) => {
-    try {
-      setErrorMessage(null);
-      await deleteTodoFile(todo.id, fId);
-      onUpdated({
-        ...todo,
-        files: (todo.files || []).filter((f) => f.id !== fId),
-      });
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : 'Impossible de supprimer le fichier.'
-      );
-    }
-  };
+  const handleDeleteFile = (fileId: string) =>
+    run(async () => {
+      await deleteTodoFile(todo.id, fileId);
+      onUpdated({ ...todo, files: (todo.files || []).filter((f) => f.id !== fileId) });
+    }, 'Impossible de supprimer le fichier.');
 
-  const handleAddComment = async (txt: string) => {
-    try {
-      setErrorMessage(null);
-      const added = await addTodoComment(todo.id, txt);
-      onUpdated({
-        ...todo,
-        comments: [...(todo.comments || []), added],
-      });
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : "Impossible d'ajouter le commentaire."
-      );
-    }
-  };
+  const handleAddComment = (content: string) =>
+    run(async () => {
+      const added = await addTodoComment(todo.id, content);
+      onUpdated({ ...todo, comments: [...(todo.comments || []), added] });
+    }, "Impossible d'ajouter le commentaire.");
 
-  const handleDeleteComment = async (cId: string) => {
-    try {
-      setErrorMessage(null);
-      await deleteTodoComment(todo.id, cId);
-      onUpdated({
-        ...todo,
-        comments: (todo.comments || []).filter((x) => x.id !== cId),
-      });
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : 'Impossible de supprimer le commentaire.'
-      );
-    }
-  };
+  const handleDeleteComment = (commentId: string) =>
+    run(async () => {
+      await deleteTodoComment(todo.id, commentId);
+      onUpdated({ ...todo, comments: (todo.comments || []).filter((c) => c.id !== commentId) });
+    }, 'Impossible de supprimer le commentaire.');
 
   return (
-    <>
-      <Backdrop onClick={onClose} />
-      <Drawer>
-        <Header>
-          <Text size="xs" weight="semibold" color="muted">
-            Détails de la tâche
-          </Text>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+    <Drawer isOpen onClose={onClose} width="28rem">
+      <Drawer.Header title="Détails de la tâche" onClose={onClose} />
+
+      <Drawer.Body>
+        <Flex $direction="column" $gap="1.5rem">
+          {errorMessage && (
+            <Alert variant="danger" onClose={() => setErrorMessage(null)}>
+              {errorMessage}
+            </Alert>
+          )}
+
+          <NameInput
+            aria-label="Nom de la tâche"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => name.trim() && name.trim() !== todo.name && save({ name: name.trim() })}
+          />
+
+          {/* Enregistré quand le focus quitte l'éditeur (pas sur sa barre d'outils) */}
+          <div
+            onBlur={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+              if (desc !== (todo.description || '')) save({ description: desc || null });
+            }}
           >
-            <Icon name="close" size={18} />
-          </button>
-        </Header>
-
-        {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
-
-        <TitleInput
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() =>
-            name.trim() !== todo.name && save({ name: name.trim() })
-          }
-        />
-
-        {/* Éditeur Markdown de core-react : enregistré quand le focus quitte l'éditeur (pas sur sa barre d'outils) */}
-        <DescriptionField
-          onBlur={(e) => {
-            if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-            if (desc !== (todo.description || '')) save({ description: desc || null });
-          }}
-        >
-          <MarkdownEditor
-            aria-label="Description de la tâche"
-            placeholder="Ajouter une note ou description…"
-            value={desc}
-            onChange={setDesc}
-            rows={5}
-          />
-        </DescriptionField>
-
-        <div>
-          <Text size="xs" weight="semibold" style={{ marginBottom: 6 }}>
-            Échéance
-          </Text>
-          <TodoDueDateSelector
-            dueDate={todo.dueDate}
-            onChange={(dueDate) => save({ dueDate })}
-          />
-        </div>
-
-        <div>
-          <Text size="xs" weight="semibold" style={{ marginBottom: 6 }}>
-            Tag
-          </Text>
-          <TagSelectDropdown
-            tags={tags}
-            value={todo.tag?.id}
-            onChange={(tag) => save({ tag })}
-          />
-        </div>
-
-        <div>
-          <Text size="xs" weight="semibold" style={{ marginBottom: 6 }}>
-            Fichiers joints
-          </Text>
-          <TodoFileList
-            todoId={todo.id}
-            files={todo.files || []}
-            onUpload={handleUpload}
-            onFileDeleted={handleDeleteFile}
-          />
-        </div>
-
-        <div>
-          <Text size="xs" weight="semibold" style={{ marginBottom: 6 }}>
-            Commentaires
-          </Text>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {(todo.comments || []).map((c) => (
-              <TodoCommentCard
-                key={c.id}
-                comment={c}
-                onDelete={handleDeleteComment}
-              />
-            ))}
+            <MarkdownEditor
+              aria-label="Description de la tâche"
+              placeholder="Ajouter une note ou une description…"
+              value={desc}
+              onChange={setDesc}
+              rows={5}
+            />
           </div>
-          <TodoCommentForm onSubmit={handleAddComment} />
-        </div>
 
-        <TodoEditFooter
-          createdAt={todo.createdAt}
-          onClose={onClose}
-          onDelete={() => onDelete(todo.id)}
-        />
-      </Drawer>
-    </>
+          <DrawerField label="Échéance">
+            <TodoDueDateSelector dueDate={todo.dueDate} onChange={(dueDate) => save({ dueDate })} />
+          </DrawerField>
+
+          <DrawerField label="Tag">
+            <TagSelectDropdown tags={tags} value={todo.tag?.id} onChange={(tag) => save({ tag })} />
+          </DrawerField>
+
+          <DrawerField label="Fichiers joints">
+            <TodoFileList files={todo.files || []} onUpload={handleUpload} onDelete={handleDeleteFile} />
+          </DrawerField>
+
+          <DrawerField label={`Commentaires (${todo.comments?.length ?? 0})`}>
+            {(todo.comments || []).map((comment) => (
+              <TodoCommentCard key={comment.id} comment={comment} onDelete={handleDeleteComment} />
+            ))}
+            <TodoCommentForm onSubmit={handleAddComment} />
+          </DrawerField>
+        </Flex>
+      </Drawer.Body>
+
+      <Footer>
+        <Text $size="xs" $color="muted">
+          {todo.createdAt ? `Créée le ${DateFormatter.short(todo.createdAt)}` : ''}
+        </Text>
+        <Button type="button" $variant="ghost" $size="sm" onClick={() => onDelete(todo)}>
+          <Icon name="trash-can-outline" size={16} />
+          Supprimer
+        </Button>
+      </Footer>
+    </Drawer>
   );
 };

@@ -1,59 +1,46 @@
-# Module Design System
+# Design System & UI Kit (v2)
 
 ## 1. Objet
 
-Bibliothèque de composants et de thème (`frontend/src/ui/`), **indépendante du métier**, destinée à être copiée telle quelle dans chaque projet.
-La documentation d'usage détaillée (props, exemples) existe déjà dans `frontend/src/ui/docs/` ; ce fichier en est la carte et fixe les règles.
+L'interface utilise **exclusivement** le UI Kit de `core-react` : composants de `core-react/ui`, icônes de `core-react/icons`, thème de `core-react/theme`. Il n'y a plus de couche d'adaptation : l'ancien barrel `src/ui/components` (`withLegacyProps`) a été supprimé, chaque fichier importe directement `core-react/ui` avec les props transitoires `$`.
+
+- `src/theme/index.ts` : thème de l'app via `createAppTheme()` (identité DS : primary indigo) → `appTheme` + `cssVariables`, branchés dans `App.tsx` (`ThemeProvider`, `GlobalStyle`, `UIProvider` avec `RouterLink`, `ToastContainer`).
+- `src/hooks/useTheme.ts` : réexporte le store de thème de `core-react/theme` (clé `ds-app-theme`), utilisé par `ThemeModeSwitcher` (barre de navigation).
 
 ## 2. Règles
 
 | ID | Règle |
 |---|---|
-| RG-DS-01 | `ui/` ne dépend d'aucun code métier : seules dépendances autorisées hors `ui/` = `@/hooks/useTheme` (pour `ThemeModeSwitcher`) et `core-ts` (`BreakPointType`). |
-| RG-DS-02 | Tout composant étend un contrat de `ui/types/components.types.ts` : `BaseComponentProps` (`id`, `className`, `style`, `children`, `as`), `ClickableComponentProps` (+ `onClick`, `disabled`, `tabIndex`, `role`, `aria-label`), `InputComponentProps<T>` (+ `name`, `value`, `defaultValue`, `readOnly`, `required`, `onChange`), `OnInputComponentProps<T>` (+ `onInput`, `onKeyDown`, `onKeyUp`). |
-| RG-DS-03 | Les styles utilisent **exclusivement les tokens du thème** (`theme.spacing`, `theme.radii`, `theme.colors.<rôle>`…) ; pas de valeur en dur. |
-| RG-DS-04 | Les couleurs passent par les **rôles sémantiques** (`primary`, `secondary`, `tertiary`, `success`, `info`, `warning`, `danger`, `neutral`) et leurs alias `base`, `hover`, `subtle`, `dark`, `emphasis`, qui s'adaptent au mode sombre. Les palettes brutes (`theme.colors.palettes.*`) sont réservées aux nuances qui ne doivent pas changer. |
-| RG-DS-05 | Contraste du focus et des textes : WCAG AA visé (ex. anneau de focus dark ≥ 3:1). |
-| RG-DS-06 | Composants composés (Card, Modal, Tabs, Sidebar, Navbar, Dropdown, Accordion, Pagination…) : un composant racine + sous-composants partageant un Context. |
-| RG-DS-07 | Chaque dossier de catégorie expose ses composants via `index.ts`. |
-| RG-DS-08 | Responsive mobile-first via `theme.media.up(key)` / `theme.media.down(key)`. |
+| RG-DS-01 | Composants importés uniquement depuis `core-react/ui` (et `core-react` pour les hooks : `useDebouncedValue`, `UIProvider`…). Aucun composant d'interface « maison » ne réimplémente un composant du kit (tiroir, modale, menu déroulant, toast, confirmation…). |
+| RG-DS-02 | Props de style **transitoires `$`** (`$variant`, `$size`, `$color`, `$gap`…). `IconButton`, `Alert`, `Loading`, `Modal`, `Drawer`, `Dropdown.*` gardent leurs props normales (`variant`, `size`, `isOpen`…) selon leur contrat. |
+| RG-DS-03 | **Tokens uniquement** dans les styled-components : `theme.colors.<rôle>.*`, `text|background|border.*`, `spacing[n]`, `radii.*`, `typography.*`, `shadows.*`, `media.*`. Aucune couleur en dur, aucun `style={{…}}`. Seule exception : les couleurs des tags (`tagColors`, données de l'API), passées au `Badge` via `$color` comme le prévoit le kit. |
+| RG-DS-04 | `import { styled } from 'styled-components'` (jamais l'import par défaut). Étendre un composant « lien » du kit via sa base (`ButtonBase`), jamais `styled(Button)` / `styled(IconButton)`. |
+| RG-DS-05 | Markdown affiché avec `MarkdownViewer` (aucun HTML injecté) ; saisi avec `MarkdownEditor`. `convertMarkdownToHtml` / `dangerouslySetInnerHTML` sont proscrits. |
+| RG-DS-06 | Noms d'icônes : uniquement ceux de `core-react/icons` (`iconNames`). Le test `src/test/icons.test.ts` échoue si un nom inconnu (y compris dans un ternaire) est utilisé. |
+| RG-DS-07 | `Card` du kit a `overflow: hidden` : une carte qui contient un `Dropdown` doit le surcharger (`overflow: visible`) pour que le menu ne soit pas coupé. |
 
-## 3. Thème
+## 3. Composants partagés de l'app (`src/components/`)
 
-| Élément | Détail |
+| Composant | Rôle |
 |---|---|
-| Thèmes | `lightTheme`, `darkTheme` (`ui/theme/theme.ts`), type `AppTheme` déclaré comme `DefaultTheme` de styled-components |
-| Choix | `useTheme()` : préférence `light` / `dark` / `system` persistée ([front_core_module.md §7](front_core_module.md#7-hooks--hooks)) ; attributs `data-theme` / `data-ds-theme` sur `<html>` |
-| Tokens (`ui/theme/tokens/`) | `colors` (`palettes` olive / taupe / slate…, `staticColors`, `getColors(mode)` → rôles + `background`, `text`, `border`), `spacing`, `radii`, `typography` (`fonts`, `weights`…), `getShadows(mode)`, `borders` (`widths`, `focusRing`), `breakpoints` |
-| Breakpoints | `sm` 576 · `md` 768 · `lg` 992 · `xl` 1200 · `xxl` 1400 px |
-| Global | `GlobalStyle` : reset, polices Google Fonts (Noto Sans, Quicksand, Roboto, Roboto Flex) |
-| Icônes | `public/assets/ds-icons.css` + polices locales ; `<Icon name>` : Material Design Icons par défaut (`mdi`), Boxicons via `iconSet` ou préfixes `bx-`, `bxs-`, `bxl-` |
+| `PageHeader` | En-tête de page : icône, titre `h1`, description, actions |
+| `Section` | Section titrée avec compteur (`Badge`) |
+| `AuthCard` | Carte des écrans publics (connexion, inscription, liens e-mail) |
+| `SettingsCard` | Carte de réglage du profil (formulaire optionnel, actions en pied) |
+| `FullScreenLoader` | Attente plein écran (session, déconnexion) |
+| `TagBadge` / `ColorDot` | Pastille et point de couleur d'un tag (`ColorEnum` → `tagColors`) |
+| `ColorSwatchPicker` | Choix d'une couleur de tag (groupe radio accessible) |
+| `FilterChip` / `FilterChipRow` | Puces à bascule (`aria-pressed`) : filtres par tag, échéances, tags du journal |
 
-## 4. Catalogue
+## 4. Shell
 
-| Catégorie | Composants exportés | Doc |
-|---|---|---|
-| Base | `Avatar`, `Badge`, `Button`, `Divider`, `Icon`, `IconButton`, `Link`, `SegmentedControl` | `docs/components/base_components_usage.md` |
-| Typo | `Title`, `Display`, `Lead`, `Text` | `typo_components_usage.md` |
-| Grid | `Container`, `Row`, `Col` (12 colonnes), `Grid`, `Flex`, `Columns` (masonry) | `grid_components_usage.md` |
-| Content | `Accordion`, `Card`, `EmptyState`, `ListGroup`, `StatCard`, `Table` | `content_component_usage.md` |
-| Forms | Atomes `Input`, `Textarea`, `Select`, `Checkbox`, `Radio`, `Toggle`, `Label` (`HelperText` non exporté) ; champs `TextField`, `TextareaField`, `ChoiceField`, `CheckField`, `ToggleField` ; enrichis `InputGroup`, `TagInput`, `FileDropzone` | `forms_components_usage.md` |
-| Feedback | `Alert`, `Loading`, `Progress`, `Skeleton`, `Modal` / `Dialog` / `ConfirmDialog`, `Toast` / `useToast`, `Drawer`, `Tooltip` | `feedback_components_usage.md` |
-| Navigation | `Navbar` (+ dropdown), `Sidebar`, `Tabs`, `Pagination`, `Dropdown`, `Breadcrumb`, `BackButton`, `ThemeModeSwitcher` | `navigation_components_usage.md` |
-| Embed | `Image`, `Video`, `Figure` (+ `Carousel`, `Gallery` non exportés) | `embed_components_usage.md` |
-| Editor | `BlockWrapper`, `BlockPicker` (+ `ImageBlock`, `VideoBlock`, `CarouselBlock` non exportés) | `docs/features/editor_usage.md` |
-
-Contrat de création d'un composant : `docs/components/component_contracts_types.md`. Thème : `docs/theme_usage.md`.
+- `AppLayout` : `Sidebar` (16 rem, tiroir sous `md`) — *Espaces de travail* : Tâches, Journal ; *Administration* (admin) : E-mails, Logs. `Navbar` : `SidebarToggle`, `ThemeModeSwitcher` et menu du compte (profil, rôle, Mon profil, Se déconnecter). Contenu dans un `Container` (72 rem max).
+- `AuthLayout` : fond dégradé `primary.subtle`, `ThemeModeSwitcher` en haut à droite, carte centrée (26 rem).
 
 ## 5. Écarts & points ouverts
 
-- `Carousel`, `Gallery`, `ImageBlock`, `VideoBlock`, `CarouselBlock`, `HelperText` existent mais ne sont pas exportés par leur `index.ts`.
-- Pas de barrel global `ui/components/index.ts` : imports par catégorie (`@/ui/components/Base`…).
-- `Toast` / `useToast` : aucun `ToastContainer` monté dans l'application.
-- Polices chargées depuis Google Fonts (`@import` dans `GlobalStyle`) : dépendance externe et sujet RGPD ; à auto-héberger si nécessaire.
-- Aucun test ni Storybook pour les composants `ui/`.
-- Des couleurs en dur subsistent dans certaines pages (ex. `#e7000b`, `#dc2626`, `#b91c1c`) en violation de RG-DS-03.
+- Aucune vérification visuelle automatisée (pas de Storybook dans l'app) : la conformité repose sur le typecheck, le lint, le test d'icônes et une revue manuelle.
 
 ## 6. Sources
 
-`frontend/src/ui/{components,theme,types,docs}/**`, `frontend/public/assets/**`, `frontend/src/hooks/useTheme.ts`.
+`frontend/src/theme/index.ts`, `frontend/src/components/`, `frontend/src/layouts/`, `frontend/src/App.tsx`, `frontend/src/test/icons.test.ts`, `node_modules/core-react/docs/`.

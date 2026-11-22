@@ -1,6 +1,6 @@
-import { Skeleton, SkeletonCircle, SkeletonGroup, SkeletonLine } from '@/ui/components';
+import { Skeleton, SkeletonCircle, SkeletonGroup, SkeletonLine } from 'core-react/ui';
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 const Sections = styled.div`
   display: flex;
@@ -11,8 +11,8 @@ const Sections = styled.div`
 const SectionHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: ${({ theme }) => theme.spacing[1.5]};
+  margin-bottom: ${({ theme }) => theme.spacing[2]};
 `;
 
 // Même pile que TodoList
@@ -27,16 +27,16 @@ const Card = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[3]};
-  padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[3.5]}`};
+  padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[4]}`};
   background-color: ${({ theme }) => theme.colors.background.surface};
   border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.base};
+  border-radius: ${({ theme }) => theme.radii.md};
 `;
 
 const TitleColumn = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: ${({ theme }) => theme.spacing[1.5]};
   flex: 1;
   min-width: 0;
 `;

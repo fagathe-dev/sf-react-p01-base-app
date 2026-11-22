@@ -517,7 +517,64 @@ final class AccountService
             return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
         }
 
-        return $this->sendJson(['hasPasscode' => $user->hasJournalPasscode()]);
+        return $this->sendJson($this->journalSecurityStatus($user));
+    }
+
+    /**
+     * PUT /api/account/journal-lock : active ou désactive la protection par code des contenus privés du journal.
+     * Corps : { enabled: bool, passcode?: string (base64) } — désactiver exige le code actuel ; activer exige qu'un code existe.
+     */
+    public function setJournalLock(Request $request): object
+    {
+        $user = $this->getAuthenticatedUser();
+        if (!$user) {
+            return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $body = $this->secretDecoder->decodeJsonBody($request->getContent(), ['passcode']);
+        $data = $body !== null ? json_decode($body, true) : null;
+        if (!is_array($data) || !is_bool($data['enabled'] ?? null)) {
+            return $this->sendJson(['message' => 'Le champ « enabled » (booléen) est obligatoire.'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $enabled = $data['enabled'];
+        if (!$user->hasJournalPasscode()) {
+            return $this->sendJson(
+                ['message' => 'Configurez d\'abord un code secret pour protéger vos contenus privés.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        if (!$enabled && !password_verify((string) ($data['passcode'] ?? ''), (string) $user->getJournalPasscode())) {
+            return $this->sendJson(['message' => 'Code secret incorrect.'], Response::HTTP_FORBIDDEN);
+        }
+
+        $user->setJournalLockEnabled($enabled);
+        $user->setUpdatedAt($this->now());
+        $this->em->flush();
+
+        $this->generateLog(
+            LoggerLevelEnum::Info,
+            ['message' => 'Protection du journal ' . ($enabled ? 'activée' : 'désactivée'), 'user_id' => (string) $user->getId()],
+            ['action' => 'account.journal_lock.' . ($enabled ? 'enable' : 'disable')]
+        );
+
+        return $this->sendJson([
+            ...$this->journalSecurityStatus($user),
+            'message' => $enabled ? 'Protection des contenus privés activée.' : 'Protection des contenus privés désactivée.',
+        ]);
+    }
+
+    /**
+     * @return array{hasPasscode: bool, lockEnabled: bool, lockActive: bool}
+     */
+    private function journalSecurityStatus(User $user): array
+    {
+        return [
+            'hasPasscode' => $user->hasJournalPasscode(),
+            'lockEnabled' => $user->isJournalLockEnabled(),
+            'lockActive'  => $user->isJournalLockActive(),
+        ];
     }
 
     /**
@@ -636,7 +693,7 @@ final class AccountService
     private function performAccountDeletion(User $user): object
     {
         try {
-            // 1. Collecte de tous les fichiers attachés (todoFiles, noteFiles, entryMedia)
+            // 1. Collecte de tous les fichiers attachés (pièces jointes des tâches, médias du journal)
             /** @var array<string, AbstractFile> $allFiles */
             $allFiles = [];
 
@@ -649,20 +706,11 @@ final class AccountService
                 }
             }
 
-            foreach ($user->getNoteFiles() as $f) {
+            foreach ($user->getJournalMedia() as $f) {
                 $allFiles[(string) $f->getId()] = $f;
             }
-            foreach ($user->getNotes() as $note) {
-                foreach ($note->getFiles() as $f) {
-                    $allFiles[(string) $f->getId()] = $f;
-                }
-            }
-
-            foreach ($user->getEntryMedia() as $f) {
-                $allFiles[(string) $f->getId()] = $f;
-            }
-            foreach ($user->getEntries() as $entry) {
-                foreach ($entry->getEntryMedia() as $f) {
+            foreach ($user->getJournalPosts() as $post) {
+                foreach ($post->getMedias() as $f) {
                     $allFiles[(string) $f->getId()] = $f;
                 }
             }
@@ -679,7 +727,8 @@ final class AccountService
                 $this->uploader->delete((string) $this->extractRelativePath($user->getAvatar()));
             }
 
-            // 4. Suppression en base de données (cascade sur todos, notes, entries, tags, locations)
+            // 4. Suppression en base de données (cascade sur todos, tags, journalPosts, journalTags, journalLocations ;
+            //    les journalMedia suivent leur post via ON DELETE CASCADE)
             $this->userRepository->remove($user, true);
 
             $this->generateLog(

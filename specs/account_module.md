@@ -2,9 +2,9 @@
 
 ## 1. Objet
 
-Gestion du compte par l'utilisateur connecté : profil, avatar, adresse e-mail, mot de passe et suppression définitive du compte.
+Gestion du compte par l'utilisateur connecté : profil, avatar, adresse e-mail, mot de passe, code secret du journal intime et suppression définitive du compte.
 
-> Hors socle : le **code secret du journal** (`/account/journal-passcode*`) est spécifique à ce projet et doit être retiré au clonage ([extraction_guide.md §3.4](extraction_guide.md#34-accountservice)).
+> Note de clonage : le **code secret du journal** (`/account/journal-passcode*` et `ChangeJournalPasscodeForm`) est lié au module métier Journal ([journal_module.md](journal_module.md)) et doit être retiré lors d'une extraction du socle seul ([extraction_guide.md §3.4](extraction_guide.md#34-accountservice)).
 
 ## 2. Règles métier
 
@@ -20,11 +20,13 @@ Gestion du compte par l'utilisateur connecté : profil, avatar, adresse e-mail, 
 | RG-ACC-08 | Suppression en **deux étapes** : envoi d'un code à 6 chiffres valable **10 min**, puis saisie du code. |
 | RG-ACC-09 | Un nouveau code de suppression ne peut être demandé qu'après **30 s** (429 sinon). Si l'e-mail échoue, le code est révoqué (502). |
 | RG-ACC-10 | Après **5 codes erronés**, le code est révoqué (429). |
-| RG-ACC-11 | La suppression efface les fichiers physiques de l'utilisateur (avatar + fichiers métier), puis l'utilisateur et, en cascade, ses `UserRequest`. Elle est **irréversible**. |
+| RG-ACC-11 | La suppression efface les fichiers physiques de l'utilisateur (avatar + fichiers métier `todoFiles`, `journalMedia`), puis l'utilisateur et, en cascade, toutes ses données (`UserRequest`, `Todo`, `Tag`, `JournalPost`, `JournalTag`, `JournalMedia`, `JournalLocation`). Elle est **irréversible**. |
+| RG-ACC-13 | **Protection du journal** (`User::$journalLockEnabled`, `false` par défaut) : effective seulement si un code existe. Activer exige un code défini ; désactiver exige le code actuel. |
+| RG-ACC-12 | **Code secret du journal** : 4 à 32 caractères côté API (4 à 8 côté UI), hashé en `PASSWORD_BCRYPT`. Si un code existe déjà (`hasJournalPasscode()`), le code actuel est obligatoire pour le modifier. Toute modification régénère `User::$jCodeToken`. |
 
 ## 3. Modèle de données
 
-Utilise `User` et `UserRequest` (types `email_change` avec `payload.new_email`, `account_deletion`). Voir [api_core_module.md §6](api_core_module.md#6-modèle-de-données-du-socle).
+Utilise `User` et `UserRequest` (types `email_change` avec `payload.new_email`, `account_deletion`). Voir [data_model.md §4](data_model.md#4-entités-du-socle).
 
 ## 4. API — `/api/account` (authentifié)
 
@@ -35,6 +37,10 @@ Utilise `User` et `UserRequest` (types `email_change` avec `payload.new_email`, 
 | PUT / PATCH | `/account/email` | `{ email }` | 200 `{ message }` | 400 violations (même adresse, déjà utilisée) · 422 domaine injoignable · 502 envoi · 500 |
 | PUT / PATCH | `/account/password` | `{ currentPassword*, newPassword* }` | 200 `{ message }` | 400 format / violations · 422 mot de passe actuel incorrect |
 | POST | `/account/avatar` | multipart, champ `avatar` (ou `file`) | 200 `user` | 400 violations (absent, type, taille) · 422 upload refusé · 500 |
+| PUT | `/account/journal-passcode` | `{ passcode*, currentPasscode?* }` | 200 `{ user, message }` | 400 format / violations (4–32 car.) · 422 code actuel manquant ou incorrect |
+| POST | `/account/journal-passcode/verify` | `{ passcode* }` | 200 `{ unlocked: true, message }` | 400 format / violations · 403 code incorrect |
+| GET | `/account/journal-passcode/status` | — | 200 `{ hasPasscode, lockEnabled, lockActive }` | 401 |
+| PUT | `/account/journal-lock` | `{ enabled: bool, passcode?* }` | 200 `{ hasPasscode, lockEnabled, lockActive, message }` | 400 `enabled` manquant · 403 code incorrect (désactivation) · 422 aucun code défini |
 | POST | `/account/delete-request` | — | 200 `{ message, expiresIn: 600, resendAvailable: 30 }` | 429 renvoi trop rapide · 502 envoi · 500 |
 | DELETE | `/account` | `{ code }` | **204** | 400 code non conforme (≠ 6 chiffres) · 422 code invalide / expiré · 429 trop de tentatives · 500 |
 | POST | `/auth/confirm-email-change` *(public)* | `{ token }` (ou `?token=`) | 200 `{ user, message }` | 422 token manquant · 400 invalide / expiré / payload absent · 409 adresse prise |
@@ -50,9 +56,11 @@ Clés de cache : `account_deletion_code_sent_<userId>` (30 s), `account_deletion
 |---|---|---|
 | En-tête | `ChangeAvatarForm` | Clic sur l'avatar → sélecteur (`accept` = 4 types autorisés) → upload immédiat → `setUser` |
 | Onglet **Informations** | `ChangeInformationsForm` | Username, prénom, nom → `setUser` |
-| Onglet **Sécurité** | `ChangeEmailForm` | Message : l'adresse change après clic sur le lien |
+| Onglet **Sécurité & Connexion** | `ChangeEmailForm` | Message : l'adresse change après clic sur le lien |
 | | `ChangePasswordForm` | Actuel + nouveau + confirmation (vérifiée côté client) ; champs vidés après succès |
-| Onglet **Zone de danger** | `DeleteAccountCard` | `window.confirm` → envoi du code → saisie avec compte à rebours (expiration / renvoi) → succès : `logout()` + redirection `/login` |
+| | `ChangeJournalPasscodeForm` | Onglet **Journal** (`/profile?tab=journal`) : configuration ou modification du code secret (4 à 8 car.) ; l'existence d'un code est lue dans le statut (`useJournalStore.security`) → verrouillage du store + rechargement du statut |
+| | `JournalLockCard` | Onglet **Journal** : `ToggleField` d'activation de la protection ; la désactivation demande le code dans une `Modal` |
+| Onglet **Danger Zone** | `DeleteAccountCard` | `window.confirm` → envoi du code → saisie avec compte à rebours (expiration / renvoi) → succès : `logout()` + redirection `/login` |
 
 ### Route `/confirm-email-change?token=` (`ConfirmEmailChangePage`, sous `AuthLayout`, sans garde)
 Appel automatique unique ; affiche succès ou erreur ; met à jour `user` si une session est ouverte.
@@ -62,11 +70,11 @@ Appel automatique unique ; affiche succès ou erreur ; met à jour `user` si une
 - **Changement de username et JWT** : le provider charge l'utilisateur par `username`, claim porté par le JWT. Après un changement, l'ancien jeton ne correspond plus à aucun utilisateur → 401 probable sur la requête suivante. À confirmer par test ; correctif : renvoyer un nouveau JWT dans la réponse ou identifier par `id`/`email`.
 - Les DTO de compte n'imposent pas de format au `username` (espaces, caractères spéciaux acceptés).
 - `confirmEmailChange` ne notifie pas l'ancienne adresse (bonne pratique de sécurité absente).
-- Le type front `User` déclare `isVerified` et `hasJournalPasscode`, non sérialisés par l'API.
-- Le texte de confirmation de `DeleteAccountCard` cite « notes, tâches, entrées de journal » : à rendre générique.
+- Le type front `User` déclare `isVerified` et `hasJournalPasscode`, non sérialisés par l'API dans `user.read` ; le front s'appuie désormais sur `GET /account/journal-passcode/status` (le champ du type est à retirer).
+- Le texte de confirmation de `DeleteAccountCard` (`ConfirmDialog`) cite « tâches, journal » : à rendre générique lors d'un clonage.
 - `performAccountDeletion()` dépend directement des entités métier : voir [extraction_guide.md §3.4](extraction_guide.md#34-accountservice).
 
 ## 7. Sources
 
-API : `src/Controller/Auth/AccountController.php`, `src/Service/AccountService.php`, `src/Dto/Account/{ChangeEmail,ChangePassword,UpdateAccount,UploadAvatar}Dto.php`.
-Front : `src/pages/auth/{ProfilePage,ConfirmEmailChangePage}.tsx`, `src/pages/auth/components/{ChangeAvatarForm,ChangeInformationsForm,ChangeEmailForm,ChangePasswordForm,DeleteAccountCard,ProfileForms.styles}.tsx`, `src/services/auth.api.ts`.
+API : `src/Controller/Auth/AccountController.php`, `src/Service/AccountService.php`, `src/Dto/Account/{ChangeEmail,ChangePassword,SetJournalPasscode,UpdateAccount,UploadAvatar,VerifyJournalPasscode}Dto.php`.
+Front : `src/pages/auth/{ProfilePage,ConfirmEmailChangePage}.tsx`, `src/pages/auth/components/{ChangeAvatarForm,ChangeInformationsForm,ChangeEmailForm,ChangePasswordForm,ChangeJournalPasscodeForm,DeleteAccountCard,ProfileForms.styles}.tsx`, `src/services/auth.api.ts`.

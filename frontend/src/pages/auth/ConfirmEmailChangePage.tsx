@@ -1,23 +1,12 @@
 import { getErrorMessage } from '@/services/apiError';
 import { confirmEmailChange } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button } from '@/ui/components';
-import { Card } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { Loading } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { AuthCard } from '@/components/AuthCard';
+import { Alert, Button, Loading } from 'core-react/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import styled from 'styled-components';
 
 type Status = { type: 'loading' } | { type: 'success' | 'error'; message: string };
-
-const Body = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing[4]};
-  padding: ${({ theme }) => theme.spacing[6]};
-`;
 
 /**
  * Page ouverte depuis le lien de l'e-mail de changement d'adresse (/confirm-email-change?token=…).
@@ -57,12 +46,7 @@ export const ConfirmEmailChangePage = () => {
   }, [token]);
 
   return (
-    <Card>
-      <Body>
-        <Title as="h3" style={{ margin: 0 }}>
-          Changement d'adresse e-mail
-        </Title>
-
+    <AuthCard title="Changement d'adresse e-mail">
         {status.type === 'loading' ? (
           <Loading size="lg" label="Validation de votre nouvelle adresse…" />
         ) : (
@@ -70,11 +54,10 @@ export const ConfirmEmailChangePage = () => {
         )}
 
         {status.type !== 'loading' && (
-          <Button href={authToken ? '/profile' : '/login'} fullWidth>
+          <Button href={authToken ? '/profile' : '/login'} $fullWidth>
             {authToken ? 'Retour à mon profil' : 'Se connecter'}
           </Button>
         )}
-      </Body>
-    </Card>
+    </AuthCard>
   );
 };

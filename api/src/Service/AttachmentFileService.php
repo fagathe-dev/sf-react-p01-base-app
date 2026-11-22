@@ -3,10 +3,8 @@
 namespace App\Service;
 
 use App\Entity\AbstractFile;
-use App\Entity\Entry;
-use App\Entity\EntryMedia;
-use App\Entity\Note;
-use App\Entity\NoteFile;
+use App\Entity\JournalMedia;
+use App\Entity\JournalPost;
 use App\Entity\Todo;
 use App\Entity\TodoFile;
 use App\Entity\User;
@@ -40,21 +38,17 @@ final class AttachmentFileService
     ) {}
 
     /**
-     * Valide et uploade un fichier pour une entité Todo, Note ou Entry.
+     * Valide et uploade un fichier pour une Todo (tout type) ou un JournalPost (images, audio, vidéo).
      *
      * @throws FileUploadException
      */
-    public function upload(UploadedFile $file, Todo|Note|Entry $target, User $user): AbstractFile
+    public function upload(UploadedFile $file, Todo|JournalPost $target, User $user): AbstractFile
     {
         // 1. Définition des règles selon la cible
         [$allowedMimes, $subDir] = match (true) {
-            $target instanceof Entry => [
+            $target instanceof JournalPost => [
                 [...MimeType::IMAGE_MIMES, ...MimeType::AUDIO_MIMES, ...MimeType::VIDEO_MIMES],
-                'entries/' . (string) $user->getId(),
-            ],
-            $target instanceof Note => [
-                MimeType::getSupportedMimetypes(),
-                'notes/' . (string) $user->getId(),
+                'journal/' . (string) $user->getId(),
             ],
             $target instanceof Todo => [
                 MimeType::getSupportedMimetypes(),
@@ -79,9 +73,8 @@ final class AttachmentFileService
 
         // 4. Instanciation de la bonne entité
         $attachment = match (true) {
-            $target instanceof Entry => (new EntryMedia())->setEntry($target),
-            $target instanceof Note  => (new NoteFile())->setNote($target),
-            $target instanceof Todo  => (new TodoFile())->setTodo($target),
+            $target instanceof JournalPost => (new JournalMedia())->setPost($target),
+            $target instanceof Todo        => (new TodoFile())->setTodo($target),
         };
 
         $attachment
@@ -146,12 +139,15 @@ final class AttachmentFileService
     /**
      * Supprime tous les fichiers liés à une entité donnée.
      */
-    public function deleteByTarget(Todo|Note|Entry $target): void
+    public function deleteByTarget(Todo|JournalPost $target): void
     {
         $files = match (true) {
-            $target instanceof Entry => $target->getEntryMedia(),
-            $target instanceof Note || $target instanceof Todo => $target->getFiles(),
+            $target instanceof JournalPost => $target->getMedias(),
+            $target instanceof Todo        => $target->getFiles(),
         };
+
+        // Copie figée : la collection ne doit pas évoluer pendant le parcours
+        $files = $files->toArray();
 
         foreach ($files as $file) {
             $this->delete($file);

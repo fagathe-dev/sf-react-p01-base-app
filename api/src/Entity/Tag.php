@@ -21,12 +21,12 @@ class Tag
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[Groups(['tag.list', 'tag.read', 'todo.read', 'todo.list', 'note.list', 'note.read'])]
+    #[Groups(['tag.list', 'tag.read', 'todo.read', 'todo.list'])]
     private ?Uuid $id = null;
 
     #[ORM\Column(length: 50, nullable: true)]
     #[Assert\NotBlank(message: 'Le nom est obligatoire !')]
-    #[Groups(['tag.list', 'tag.read', 'todo.read', 'todo.list', 'note.list', 'note.read'])]
+    #[Groups(['tag.list', 'tag.read', 'todo.read', 'todo.list'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 20, nullable: true, enumType: ColorEnum::class)]
@@ -54,24 +54,10 @@ class Tag
     #[ORM\OneToMany(targetEntity: Todo::class, mappedBy: 'tag')]
     private Collection $todos;
 
-    /**
-     * @var Collection<int, Note>
-     */
-    #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'tag')]
-    private Collection $notes;
-
-    /**
-     * @var Collection<int, Entry>
-     */
-    #[ORM\OneToMany(targetEntity: Entry::class, mappedBy: 'tag')]
-    private Collection $entries;
-
     public function __construct()
     {
         $this->id = Uuid::v7();
         $this->todos = new ArrayCollection();
-        $this->notes = new ArrayCollection();
-        $this->entries = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -182,54 +168,6 @@ class Tag
             }
         }
 
-        return $this;
-    }
-
-    public function getNotes(): Collection
-    {
-        return $this->notes;
-    }
-
-    public function addNote(Note $note): static
-    {
-        if (!$this->notes->contains($note)) {
-            $this->notes->add($note);
-            $note->setTag($this);
-        }
-        return $this;
-    }
-
-    public function removeNote(Note $note): static
-    {
-        if ($this->notes->removeElement($note)) {
-            if ($note->getTag() === $this) {
-                $note->setTag(null);
-            }
-        }
-        return $this;
-    }
-
-    public function getEntries(): Collection
-    {
-        return $this->entries;
-    }
-
-    public function addEntry(Entry $entry): static
-    {
-        if (!$this->entries->contains($entry)) {
-            $this->entries->add($entry);
-            $entry->setTag($this);
-        }
-        return $this;
-    }
-
-    public function removeEntry(Entry $entry): static
-    {
-        if ($this->entries->removeElement($entry)) {
-            if ($entry->getTag() === $this) {
-                $entry->setTag(null);
-            }
-        }
         return $this;
     }
 }

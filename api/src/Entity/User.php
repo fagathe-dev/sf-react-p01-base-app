@@ -24,7 +24,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[Groups(['user.read', 'note.list'])]
+    #[Groups(['user.read'])]
     private ?Uuid $id = null;
 
     #[ORM\Column(length: 180)]
@@ -80,40 +80,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $todos;
 
     /**
-     * @var Collection<int, Note>
-     */
-    #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'owner', cascade: ['remove', 'persist'], orphanRemoval: true)]
-    private Collection $notes;
-
-    /**
-     * @var Collection<int, Entry>
-     */
-    #[ORM\OneToMany(targetEntity: Entry::class, mappedBy: 'owner', cascade: ['remove', 'persist'], orphanRemoval: true)]
-    private Collection $entries;
-
-    /**
      * @var Collection<int, TodoFile>
      */
     #[ORM\OneToMany(targetEntity: TodoFile::class, mappedBy: 'owner', cascade: ['persist'])]
     private Collection $todoFiles;
 
     /**
-     * @var Collection<int, NoteFile>
+     * @var Collection<int, JournalPost>
      */
-    #[ORM\OneToMany(targetEntity: NoteFile::class, mappedBy: 'owner', cascade: ['persist'])]
-    private Collection $noteFiles;
+    #[ORM\OneToMany(targetEntity: JournalPost::class, mappedBy: 'owner', cascade: ['remove', 'persist'], orphanRemoval: true)]
+    private Collection $journalPosts;
 
     /**
-     * @var Collection<int, EntryMedia>
+     * @var Collection<int, JournalTag>
      */
-    #[ORM\OneToMany(targetEntity: EntryMedia::class, mappedBy: 'owner', cascade: ['persist'])]
-    private Collection $entryMedia;
+    #[ORM\OneToMany(targetEntity: JournalTag::class, mappedBy: 'owner', cascade: ['remove', 'persist'], orphanRemoval: true)]
+    private Collection $journalTags;
 
     /**
-     * @var Collection<int, Location>
+     * @var Collection<int, JournalMedia>
      */
-    #[ORM\OneToMany(targetEntity: Location::class, mappedBy: 'owner', cascade: ['remove', 'persist'], orphanRemoval: true)]
-    private Collection $locations;
+    #[ORM\OneToMany(targetEntity: JournalMedia::class, mappedBy: 'owner', cascade: ['persist'])]
+    private Collection $journalMedia;
+
+    /**
+     * @var Collection<int, JournalLocation>
+     */
+    #[ORM\OneToMany(targetEntity: JournalLocation::class, mappedBy: 'owner', cascade: ['remove', 'persist'], orphanRemoval: true)]
+    private Collection $journalLocations;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $emailVerifiedAt = null;
@@ -139,17 +133,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 90, nullable: true)]
     private ?string $jCodeToken = null;
 
+    /**
+     * Protection par code des contenus privés du journal (onglet Privé), désactivée par défaut.
+     * Effective seulement si un code est défini.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $journalLockEnabled = false;
+
     public function __construct()
     {
         $this->id = Uuid::v7();
         $this->tags = new ArrayCollection();
         $this->todos = new ArrayCollection();
-        $this->notes = new ArrayCollection();
-        $this->entries = new ArrayCollection();
         $this->todoFiles = new ArrayCollection();
-        $this->noteFiles = new ArrayCollection();
-        $this->entryMedia = new ArrayCollection();
-        $this->locations = new ArrayCollection();
+        $this->journalPosts = new ArrayCollection();
+        $this->journalTags = new ArrayCollection();
+        $this->journalMedia = new ArrayCollection();
+        $this->journalLocations = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -330,64 +330,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, Note>
-     */
-    public function getNotes(): Collection
-    {
-        return $this->notes;
-    }
-
-    public function addNote(Note $note): static
-    {
-        if (!$this->notes->contains($note)) {
-            $this->notes->add($note);
-            $note->setOwner($this);
-        }
-
-        return $this;
-    }
-
-    public function removeNote(Note $note): static
-    {
-        if ($this->notes->removeElement($note)) {
-            if ($note->getOwner() === $this) {
-                $note->setOwner(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Entry>
-     */
-    public function getEntries(): Collection
-    {
-        return $this->entries;
-    }
-
-    public function addEntry(Entry $entry): static
-    {
-        if (!$this->entries->contains($entry)) {
-            $this->entries->add($entry);
-            $entry->setOwner($this);
-        }
-
-        return $this;
-    }
-
-    public function removeEntry(Entry $entry): static
-    {
-        if ($this->entries->removeElement($entry)) {
-            if ($entry->getOwner() === $this) {
-                $entry->setOwner(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
      * @return Collection<int, TodoFile>
      */
     public function getTodoFiles(): Collection
@@ -417,90 +359,55 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, NoteFile>
+     * @return Collection<int, JournalPost>
      */
-    public function getNoteFiles(): Collection
+    public function getJournalPosts(): Collection
     {
-        return $this->noteFiles;
+        return $this->journalPosts;
     }
 
-    public function addNoteFile(NoteFile $noteFile): static
+    public function addJournalPost(JournalPost $post): static
     {
-        if (!$this->noteFiles->contains($noteFile)) {
-            $this->noteFiles->add($noteFile);
-            $noteFile->setOwner($this);
-        }
-
-        return $this;
-    }
-
-    public function removeNoteFile(NoteFile $noteFile): static
-    {
-        if ($this->noteFiles->removeElement($noteFile)) {
-            if ($noteFile->getOwner() === $this) {
-                $noteFile->setOwner(null);
-            }
+        if (!$this->journalPosts->contains($post)) {
+            $this->journalPosts->add($post);
+            $post->setOwner($this);
         }
 
         return $this;
     }
 
     /**
-     * @return Collection<int, EntryMedia>
+     * @return Collection<int, JournalTag>
      */
-    public function getEntryMedia(): Collection
+    public function getJournalTags(): Collection
     {
-        return $this->entryMedia;
+        return $this->journalTags;
     }
 
-    public function addEntryMedium(EntryMedia $entryMedium): static
+    public function addJournalTag(JournalTag $tag): static
     {
-        if (!$this->entryMedia->contains($entryMedium)) {
-            $this->entryMedia->add($entryMedium);
-            $entryMedium->setOwner($this);
-        }
-
-        return $this;
-    }
-
-    public function removeEntryMedium(EntryMedia $entryMedium): static
-    {
-        if ($this->entryMedia->removeElement($entryMedium)) {
-            if ($entryMedium->getOwner() === $this) {
-                $entryMedium->setOwner(null);
-            }
+        if (!$this->journalTags->contains($tag)) {
+            $this->journalTags->add($tag);
+            $tag->setOwner($this);
         }
 
         return $this;
     }
 
     /**
-     * @return Collection<int, Location>
+     * @return Collection<int, JournalMedia>
      */
-    public function getLocations(): Collection
+    public function getJournalMedia(): Collection
     {
-        return $this->locations;
+        return $this->journalMedia;
     }
 
-    public function addLocation(Location $location): static
+    /**
+     * @return Collection<int, JournalLocation>
+     */
+    public function getJournalLocations(): Collection
     {
-        if (!$this->locations->contains($location)) {
-            $this->locations->add($location);
-            $location->setOwner($this);
-        }
-
-        return $this;
-    }
-
-    public function removeLocation(Location $location): static
-    {
-        if ($this->locations->removeElement($location)) {
-            if ($location->getOwner() === $this) {
-                $location->setOwner(null);
-            }
-        }
-
-        return $this;
+        return $this->journalLocations;
     }
 
     public function getEmailVerifiedAt(): ?\DateTimeImmutable
@@ -581,6 +488,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function hasJournalPasscode(): bool
     {
         return $this->journalPasscode !== null;
+    }
+
+    public function isJournalLockEnabled(): bool
+    {
+        return $this->journalLockEnabled;
+    }
+
+    public function setJournalLockEnabled(bool $journalLockEnabled): static
+    {
+        $this->journalLockEnabled = $journalLockEnabled;
+
+        return $this;
+    }
+
+    /**
+     * Le contenu privé du journal n'exige le code (en-tête X-JOURNAL-AUTH) que si un code est défini ET la protection active.
+     */
+    public function isJournalLockActive(): bool
+    {
+        return $this->hasJournalPasscode() && $this->journalLockEnabled;
     }
 
     public function getJCodeToken(): ?string

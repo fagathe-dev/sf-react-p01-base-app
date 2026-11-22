@@ -1,41 +1,27 @@
 import { Tag } from '@/types/tag.types';
-import { Text } from '@/ui/components';
+import { Card } from 'core-react/ui';
 import React from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { TagListItem } from './TagListItem';
 
-const ListContainer = styled.div`
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.base};
-  overflow: hidden;
-  background-color: ${({ theme }) => theme.colors.background.surface};
+const List = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
 `;
 
 interface TagListProps {
   tags: Tag[];
   onEdit: (tag: Tag) => void;
-  onDelete: (id: string) => void;
+  onDelete: (tag: Tag) => void;
 }
 
-export const TagList: React.FC<TagListProps> = ({ tags, onEdit, onDelete }) => {
-  if (tags.length === 0) {
-    return (
-      <Text color="muted" size="sm">
-        Aucun tag créé pour l'instant.
-      </Text>
-    );
-  }
-
-  return (
-    <ListContainer>
+export const TagList: React.FC<TagListProps> = ({ tags, onEdit, onDelete }) => (
+  <Card>
+    <List>
       {tags.map((tag) => (
-        <TagListItem
-          key={tag.id}
-          tag={tag}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
+        <TagListItem key={tag.id} tag={tag} onEdit={onEdit} onDelete={onDelete} />
       ))}
-    </ListContainer>
-  );
-};
+    </List>
+  </Card>
+);

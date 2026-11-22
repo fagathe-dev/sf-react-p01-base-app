@@ -25,6 +25,23 @@ class TagRepository extends ServiceEntityRepository
 
 
     /**
+     * Tags de l'utilisateur rattachés à au moins une tâche (barre de filtres de la page Tâches).
+     *
+     * @return Tag[]
+     */
+    public function findUsedByTodos(User $owner): array
+    {
+        return $this->createQueryBuilder('t')
+            ->innerJoin('t.todos', 'todo')
+            ->andWhere('t.owner = :owner')
+            ->setParameter('owner', $owner->getId(), UuidType::NAME)
+            ->groupBy('t.id')
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Vérifie si un utilisateur possède déjà un tag avec cette couleur.
      */
     public function colorExistsForUser(User $owner, ColorEnum|string $color, ?Uuid $excludeId = null): bool

@@ -39,14 +39,24 @@ final class TagService
         return $this->repository->findOneBy(['id' => $id]);
     }
 
-    public function listTags(): object
+    /**
+     * GET /api/tags : tous les tags, ou ?usedIn=todos pour ne garder que ceux rattachés à au moins une tâche.
+     */
+    public function listTags(Request $request): object
     {
         $user = $this->getAuthenticatedUser();
         if (!$user) {
             return $this->sendJson(['message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
         }
 
-        return $this->sendJson($user->getTags(), Response::HTTP_OK, context: ['groups' => ['tag.list']]);
+        $usedIn = $request->query->getString('usedIn');
+        if ($usedIn !== '' && $usedIn !== 'todos') {
+            return $this->sendJson(['message' => 'Valeur de usedIn inconnue (seule « todos » est acceptée).'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $tags = $usedIn === 'todos' ? $this->repository->findUsedByTodos($user) : $user->getTags();
+
+        return $this->sendJson($tags, Response::HTTP_OK, context: ['groups' => ['tag.list']]);
     }
 
     public function createTag(Request $request): object

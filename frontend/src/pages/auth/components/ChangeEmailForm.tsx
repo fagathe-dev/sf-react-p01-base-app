@@ -1,9 +1,8 @@
+import { SettingsCard } from '@/components/SettingsCard';
 import { updateEmail } from '@/services/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button } from '@/ui/components';
-import { Title } from '@/ui/components';
+import { Alert, Button, TextField } from 'core-react/ui';
 import React, { useState } from 'react';
-import * as S from './ProfileForms.styles';
 
 export const ChangeEmailForm: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -33,23 +32,19 @@ export const ChangeEmailForm: React.FC = () => {
   };
 
   return (
-    <S.FormCard onSubmit={handleSubmit}>
-      <Title as="h4" style={{ margin: 0 }}>
-        Adresse e-mail
-      </Title>
-
-      {feedback && <S.FeedbackMsg $type={feedback.type}>{feedback.message}</S.FeedbackMsg>}
-
-      <S.FieldGroup>
-        <S.Label htmlFor="profile-email">Nouvelle adresse e-mail</S.Label>
-        <S.Input id="profile-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </S.FieldGroup>
-
-      <S.ActionsRow>
-        <Button type="submit" loading={loading} disabled={!email.trim() || email.trim() === user?.email}>
+    <SettingsCard
+      title="Adresse e-mail"
+      description="Un lien de confirmation sera envoyé à la nouvelle adresse."
+      onSubmit={handleSubmit}
+      actions={
+        <Button type="submit" $loading={loading} disabled={!email.trim() || email.trim() === user?.email}>
           Mettre à jour l'e-mail
         </Button>
-      </S.ActionsRow>
-    </S.FormCard>
+      }
+    >
+      {feedback && <Alert variant={feedback.type === 'success' ? 'success' : 'danger'}>{feedback.message}</Alert>}
+
+      <TextField id="profile-email" label="Nouvelle adresse e-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+    </SettingsCard>
   );
 };

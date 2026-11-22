@@ -1,6 +1,6 @@
 ---
 name: sf-react-p01-base-app
-description: Architecture et conventions de développement de la Base App (socle réutilisable) — API REST Symfony 8 (`api/`, `App\`, JWT, Doctrine, librairie `core-php`) et SPA React 19 + TypeScript + Vite (`frontend/`, UI Kit `core-react`, utilitaires `core-ts`). Modules : auth, compte, e-mails, aperçu des e-mails, logs, todos, tags, notes, journal intime. À utiliser systématiquement pour toute intervention sur ce dépôt.
+description: Architecture et conventions de développement de la Base App (socle réutilisable) — API REST Symfony 8 (`api/`, `App\`, JWT, Doctrine, librairie `core-php`) et SPA React 19 + TypeScript + Vite (`frontend/`, UI Kit `core-react`, utilitaires `core-ts`). Modules : auth, compte, e-mails, aperçu des e-mails, logs, tâches (et leurs tags), journal (réseau social personnel). À utiliser systématiquement pour toute intervention sur ce dépôt.
 ---
 
 # Architecture & Conventions de la Base App
@@ -21,8 +21,8 @@ Dépôt à deux applications, servies sous le même domaine (`/api` → Symfony,
 
 | Couche | Socle (réutilisé par les autres projets) | Métier propre à ce projet |
 |---|---|---|
-| API | Auth, compte, mailer, aperçu des e-mails, logs, health-check | Todos, tags, notes, journal, lieux, pièces jointes |
-| Front | `ui/`, hooks, stores, services, utils, router, layouts, pages `auth/` et `admin/` | Pages `todos/`, `tags/`, `notes/`, `journal/` |
+| API | Auth, compte, mailer, aperçu des e-mails, logs, health-check | Todos, tags, journal (posts, tags, médias, lieux), pièces jointes |
+| Front | `theme/`, `components/`, hooks, stores, services, utils, router, layouts, pages `auth/` et `admin/` | Pages `todos/`, `tags/`, `journal/` |
 
 > Ne jamais faire dépendre une brique du socle d'un module métier (ex. `AccountService` ne doit pas connaître `Todo`). Le nettoyage de données métier se branche par un service dédié ou un listener Doctrine.
 
@@ -78,8 +78,9 @@ Requête → Controller (mince) → Service (logique) → Repository
 
 - `declare(strict_types=1);` dans tout nouveau fichier ; setters fluents typés `: static`.
 - Identifiants **UUID v7** générés dans le constructeur (`$this->id = Uuid::v7();`), avec `createdAt = new \DateTimeImmutable()`.
-- Exposition contrôlée par `#[Groups]` : `user.read`, `entry.list` / `entry.read`, etc. Ne jamais exposer `password`, `journalPasscode`, `jCodeToken`.
-- Superclasses : `AbstractFile` (métadonnées de fichier : `NoteFile`, `TodoFile`, `EntryMedia`) et `AbstractTextEntry` (contenu texte, `is_pinned` : `Note`, `Entry`).
+- Exposition contrôlée par `#[Groups]` : `user.read`, `journal_post.list` / `journal_post.read`, etc. Ne jamais exposer `password`, `journalPasscode`, `jCodeToken`.
+- Superclasses : `AbstractFile` (métadonnées de fichier : `TodoFile`, `JournalMedia`) et `AbstractTextEntry` (contenu daté, `is_pinned` : `JournalPost`).
+- Un module métier est isolé **fonctionnellement**, pas par namespace : ses entités, repositories, services et contrôleurs restent dans `App\Entity`, `App\Repository`, `App\Service`, `App\Controller` (préfixe de classe `Journal…`) ; seuls les DTO sont rangés par module (`App\Dto\Journal`).
 - **DTO** (`App\Dto\<Domaine>\`) : classes `final` à propriétés publiques + contraintes `Assert`, messages en français. Les DTO d'e-mail (`Dto\Mail\`) sont `final readonly` avec constructeur promu.
 - **Enums** : `Auth\RoleEnum` (`ROLE_USER`, `ROLE_ADMIN`, `mapRole()`, `choices()`, `values()`), `Auth\UserRequestTypeEnum`, `ColorEnum` (13 couleurs), `MoodEnum` (15 humeurs, `getLabel()`), `StateEnum` (`open`, `archived`, `trash`).
 
@@ -167,7 +168,7 @@ src/
 
 ### 2.2. UI Kit
 
-- **Toujours importer depuis le barrel** `@/ui/components` (`import { Button, Icon, Alert } from '@/ui/components'`), jamais directement depuis `core-react`. Le barrel enveloppe certains composants avec `withLegacyProps` : les anciennes props (`variant`, `size`…) restent acceptées, **le nouveau code utilise les props préfixées `$`**. Documentation : `node_modules/core-react/docs/`.
+- **UI 100 % `core-react/ui`** : importer directement `import { Button, Icon, Alert } from 'core-react/ui'`, props de style préfixées `$`, tokens du thème uniquement (aucune couleur en dur ni `style={{…}}` ; seules les couleurs de tags issues de l'API passent par `Badge $color`). Pas d'adaptateur (`withLegacyProps` supprimé). Composants partagés de l'app : `src/components/`. Icônes : noms de `core-react/icons` (contrôlés par `src/test/icons.test.ts`). Documentation : `node_modules/core-react/docs/` et [specs/design_system_module.md](specs/design_system_module.md).
 - Hooks génériques (`useActionTimer`, `usePageFocus`…) : depuis `core-react`. Utilitaires (`StorageService`, `DateFormatter`, `convertMarkdownToHtml`, `FileSizeFormatter`…) : depuis `core-ts`.
 - Styles avec les **tokens du thème** (`theme.colors.<rôle>`, `theme.radii`, `theme.shadows`) plutôt que des valeurs en dur. Icônes : `<Icon name="pencil-outline" />` (Material Design Icons).
 
@@ -196,7 +197,7 @@ src/
 
 | Groupe | Garde / layout | Routes |
 |---|---|---|
-| Espace connecté | `ProtectedRoute` → `AppLayout` | `/` (→ `/todos`), `/todos`, `/tags`, `/notes`, `/archives`, `/trash`, `/journal` (`new`, `:journalId`, `:journalId/edit`), `/profile` |
+| Espace connecté | `ProtectedRoute` → `AppLayout` | `/` (→ `/todos`), `/todos` (`?tab=tags`), `/tags` (→ `/todos?tab=tags`), `/journal` (`?tab=feed\|memories\|bookmarks\|tags\|private`), `/profile` (`?tab=…`) |
 | Admin | `AdminRoute` (sous `ProtectedRoute`) | `/admin/emails`, `/admin/logs` |
 | Public | `PublicRoute` → `AuthLayout` | `/login`, `/register`, `/forgot-password` |
 | Liens e-mail | `AuthLayout`, sans garde | `/verify-email`, `/reset-password`, `/confirm-email-change` |
@@ -218,6 +219,8 @@ src/
 
 ## 3. Environnement & déploiement
 
+> **Règle absolue : lire uniquement `.env`, jamais le fichier `.env.local`** (ni `api/.env.local`, ni `.env.*.local`) — pas d'ouverture, de `cat`, de `grep`, ni d'extraction d'une valeur, même partielle ou masquée. Il contient des secrets et des données personnelles. Pour connaître une variable, lire sa clé et sa valeur d'exemple dans `.env` ; pour une commande qui a besoin d'une base, utiliser l'environnement `test` (qui ne charge pas `.env.local`) ou demander à l'utilisateur.
+
 - **API** (`api/.env` = modèle sans secret, valeurs réelles dans `api/.env.local`, **jamais lu ni versionné**) : `DATABASE_URL`, `JWT_SECRET_KEY` / `JWT_PUBLIC_KEY` / `JWT_PASSPHRASE`, `JWT_TOKEN_TTL`, `CORS_ALLOW_ORIGIN`, `DEFAULT_URI`, `FRONTEND_URL`, `MAILER_DSN`, `DEFAULT_EMAIL_SENDER`, `APP_NAME`, `LOGO_PATH`, `SUPPORT_EMAIL`.
 - **Front** : `VITE_API_URL` (avec `/api`).
 - **Installation** : `composer install` (accès au dépôt privé `core-php`), `lexik:jwt:generate-keypair`, `doctrine:database:create`, `make:migration` + `doctrine:migrations:migrate`, `doctrine:fixtures:load` ; côté front `npm ci` puis `npm run dev`.
@@ -230,5 +233,5 @@ src/
 
 1. Le module modifié respecte son fichier `specs/<module>_module.md` (ou la spec est mise à jour si le comportement change volontairement).
 2. API : `php bin/console lint:container`, `debug:router` si des routes changent ; messages d'erreur en français ; log `context.action` cohérent.
-3. Front : `npx tsc -b`, `npm run lint`, `npm test` ; aucun appel HTTP hors de `services/`, aucun import direct de `core-react` hors du barrel `@/ui/components`.
-4. Pas de secret ni de lecture de `.env.local` ; pas de nouvelle dépendance du socle vers un module métier.
+3. Front : `npx tsc -b`, `npm run lint`, `npm test` ; aucun appel HTTP hors de `services/` ; l'UI n'utilise que `core-react/ui` (props `$`, tokens du thème, aucune couleur en dur hors couleurs de tags issues de l'API).
+4. Pas de secret ni de lecture de `.env.local` (voir la règle absolue du §3) ; pas de nouvelle dépendance du socle vers un module métier.

@@ -1,47 +1,14 @@
-import { Icon } from '@/ui/components';
+import { Button, Icon, Input } from 'core-react/ui';
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 const Form = styled.form`
   display: flex;
-  gap: ${({ theme }) => theme.spacing[1.5]};
-  margin-top: ${({ theme }) => theme.spacing[2]};
-`;
-
-const Input = styled.input`
-  flex: 1;
-  padding: ${({ theme }) => `${theme.spacing[1.5]} ${theme.spacing[2.5]}`};
-  font-family: inherit;
-  font-size: ${({ theme }) => theme.typography.sizes.xs};
-  background-color: ${({ theme }) => theme.colors.background.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.sm};
-  color: ${({ theme }) => theme.colors.text.heading};
-  outline: none;
-
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary.base};
-  }
-`;
-
-const SendBtn = styled.button`
-  padding: ${({ theme }) => `${theme.spacing[1.5]} ${theme.spacing[2.5]}`};
-  background-color: ${({ theme }) => theme.colors.primary.base};
-  color: #fff;
-  border: none;
-  border-radius: ${({ theme }) => theme.radii.sm};
-  cursor: pointer;
-  display: flex;
   align-items: center;
-
-  &:disabled {
-    opacity: 0.5;
-  }
+  gap: ${({ theme }) => theme.spacing[2]};
 `;
 
-export const TodoCommentForm: React.FC<{
-  onSubmit: (c: string) => Promise<void>;
-}> = ({ onSubmit }) => {
+export const TodoCommentForm: React.FC<{ onSubmit: (content: string) => Promise<void> }> = ({ onSubmit }) => {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -60,13 +27,14 @@ export const TodoCommentForm: React.FC<{
   return (
     <Form onSubmit={handleSubmit}>
       <Input
+        aria-label="Nouveau commentaire"
         placeholder="Ajouter un commentaire…"
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
-      <SendBtn type="submit" disabled={!content.trim() || submitting}>
-        <Icon name="send" size={14} />
-      </SendBtn>
+      <Button type="submit" $loading={submitting} disabled={!content.trim()} aria-label="Publier le commentaire">
+        <Icon name="send" size={16} />
+      </Button>
     </Form>
   );
 };

@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores/auth.store';
-import { Loading } from '@/ui/components';
+import { FullScreenLoader } from '@/components/FullScreenLoader';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,9 +12,5 @@ export const LogoutPage = () => {
     navigate('/login', { replace: true });
   }, [logout, navigate]);
 
-  return (
-    <div style={{ display: 'grid', height: '100vh', placeItems: 'center' }}>
-      <Loading size="lg" label="Déconnexion en cours…" />
-    </div>
-  );
+  return <FullScreenLoader label="Déconnexion en cours…" />;
 };

@@ -5,5 +5,6 @@ export * from './ChangeJournalPasscodeForm';
 export * from './ChangePasswordForm';
 export * from './CodeLoginForm';
 export * from './DeleteAccountCard';
+export * from './JournalLockCard';
 export * from './PasswordLoginForm';
 export * from './ProfileSkeleton';

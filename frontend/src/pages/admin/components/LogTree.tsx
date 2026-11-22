@@ -1,7 +1,7 @@
 import { LogNode } from '@/types/log.types';
-import { Icon } from '@/ui/components';
+import { Icon } from 'core-react/ui';
 import { useState } from 'react';
-import styled, { css } from 'styled-components';
+import { styled, css } from 'styled-components';
 
 const TreeList = styled.ul<{ $depth: number }>`
   list-style: none;

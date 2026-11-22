@@ -1,89 +1,58 @@
-// src/pages/todos/components/TodoQuickCreateForm.tsx
 import { createTodo } from '@/services/todo.api';
 import { Todo } from '@/types/todo.types';
-import { Icon } from '@/ui/components';
-import { Text } from '@/ui/components';
+import { Button, HelperText, Icon } from 'core-react/ui';
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
-const Root = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing[1]};
-`;
-
-const Container = styled.form<{ $focused: boolean }>`
+const Form = styled.form`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing[2.5]};
-  padding: ${({ theme }) => `${theme.spacing[3]} ${theme.spacing[3.5]}`};
+  padding: ${({ theme }) => `${theme.spacing[2]} ${theme.spacing[2]} ${theme.spacing[2]} ${theme.spacing[4]}`};
+  border: 1px solid ${({ theme }) => theme.colors.border.default};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background-color: ${({ theme }) => theme.colors.background.surface};
-  border: 1px solid
-    ${({ $focused, theme }) =>
-      $focused ? theme.colors.primary.base : theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.base};
-  box-shadow: ${({ theme }) => theme.shadows.md};
-  transition: all 0.15s ease;
-`;
+  box-shadow: ${({ theme }) => theme.shadows.lg};
+  color: ${({ theme }) => theme.colors.text.muted};
+  transition: border-color 0.15s ease;
 
-const AddCircle = styled.div<{ $focused: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.5px dashed
-    ${({ $focused, theme }) =>
-      $focused ? theme.colors.primary.base : theme.colors.text.muted};
-  color: ${({ $focused, theme }) =>
-    $focused ? theme.colors.primary.base : theme.colors.text.muted};
-  flex-shrink: 0;
+  &:focus-within {
+    border-color: ${({ theme }) => theme.colors.primary.base};
+    color: ${({ theme }) => theme.colors.primary.base};
+  }
 `;
 
 const Input = styled.input`
   flex: 1;
+  min-width: 0;
+  min-height: 2.25rem;
   border: none;
-  background: transparent;
   outline: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text.heading};
   font-family: inherit;
   font-size: ${({ theme }) => theme.typography.sizes.sm};
-  color: ${({ theme }) => theme.colors.text.heading};
 
   &::placeholder {
     color: ${({ theme }) => theme.colors.text.muted};
   }
 `;
 
-const AddBtn = styled.button`
-  padding: ${({ theme }) => `${theme.spacing[1]} ${theme.spacing[3]}`};
-  background-color: ${({ theme }) => theme.colors.primary.base};
-  color: #fff;
-  border: none;
-  border-radius: ${({ theme }) => theme.radii.sm};
-  font-size: ${({ theme }) => theme.typography.sizes.xs};
-  font-weight: ${({ theme }) => theme.typography.weights.medium};
-  cursor: pointer;
-`;
-
-export const TodoQuickCreateForm: React.FC<{
-  onCreated: (t: Todo) => void;
-}> = ({ onCreated }) => {
+/** Barre de création rapide (Entrée pour ajouter). */
+export const TodoQuickCreateForm: React.FC<{ onCreated: (t: Todo) => void }> = ({ onCreated }) => {
   const [name, setName] = useState('');
-  const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const val = name.trim();
-    if (!val || loading) return;
+    const value = name.trim();
+    if (!value || loading) return;
 
     try {
       setLoading(true);
       setError(null);
-      const created = await createTodo({ name: val });
-      onCreated(created);
+      onCreated(await createTodo({ name: value }));
       setName('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la création.');
@@ -93,33 +62,24 @@ export const TodoQuickCreateForm: React.FC<{
   };
 
   return (
-    <Root>
-      <Container $focused={focused} onSubmit={handleSubmit}>
-        <AddCircle $focused={focused}>
-          <Icon name="plus" size={14} />
-        </AddCircle>
+    <div>
+      <Form onSubmit={handleSubmit}>
+        <Icon name="plus" size={20} />
         <Input
+          aria-label="Nouvelle tâche"
           placeholder="Ajouter une tâche…"
           value={name}
           onChange={(e) => {
             setName(e.target.value);
             if (error) setError(null);
           }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           disabled={loading}
         />
-        {name.trim() && (
-          <AddBtn type="submit" disabled={loading}>
-            Ajouter
-          </AddBtn>
-        )}
-      </Container>
-      {error && (
-        <Text size="xs" color="danger" style={{ paddingLeft: 4 }}>
-          {error}
-        </Text>
-      )}
-    </Root>
+        <Button type="submit" $size="sm" $loading={loading} disabled={!name.trim()}>
+          Ajouter
+        </Button>
+      </Form>
+      {error && <HelperText $state="invalid">{error}</HelperText>}
+    </div>
   );
 };

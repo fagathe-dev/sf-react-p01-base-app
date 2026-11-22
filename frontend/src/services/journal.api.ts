@@ -1,179 +1,97 @@
 import { JOURNAL_TOKEN_KEY, useJournalStore } from '@/stores/journal.store';
 import {
-  CreateEntryPayload,
-  Entry,
-  EntryMedia,
+  CreateJournalPostPayload,
+  JournalCounts,
+  JournalPost,
+  JournalPostFilters,
+  JournalPostTab,
+  JournalTag,
+  JournalTagPayload,
   UnlockJournalPayload,
   UnlockJournalResponse,
-  UpdateEntryPayload,
+  UpdateJournalPostPayload,
 } from '@/types/journal.types';
+import { buildJournalPostFormData } from '@/utils/journal';
 import { toApiError } from './apiError';
 import { fetchAPI } from './fetchAPI';
 import { sessionAppStorage } from './storage.service';
 
-const JOURNAL_URL = '/journal';
+const POSTS_URL = '/journal/posts';
+const TAGS_URL = '/journal/tags';
 
-const getJournalHeaders = (): Record<string, string> => {
+/**
+ * En-tête X-JOURNAL-AUTH quand le journal est déverrouillé. Il n'est exigé que pour le contenu privé,
+ * mais il est toujours envoyé s'il existe : les compteurs et les tags incluent alors le privé.
+ */
+const journalHeaders = (): Record<string, string> => {
   const token = (sessionAppStorage.get(JOURNAL_TOKEN_KEY) as string | null) ?? useJournalStore.getState().token;
-
   return token ? { 'X-JOURNAL-AUTH': token } : {};
 };
 
-const handleUnauthorized = (status: number) => {
-  if (status === 403) {
+/** 403 : jeton refusé ou expiré, on reverrouille l'onglet Privé. */
+const lockOnForbidden = (status: number) => {
+  if (status === 403 && useJournalStore.getState().isUnlocked) {
     useJournalStore.getState().lock();
   }
 };
 
-/**
- * 1. Envoi du code secret vers l'API
- * 2. Réception du jCodeToken
- * 3. Enregistrement dans le store / sessionStorage
- */
+const request = async <T>(url: string, fallback: string, options: Parameters<typeof fetchAPI>[1] = {}): Promise<T> => {
+  const res = await fetchAPI<T>(url, { ...options, headers: { ...journalHeaders(), ...(options.headers ?? {}) } });
+  lockOnForbidden(res.status);
+  if (!res.ok) throw toApiError(res, fallback);
+  return res.data as T;
+};
+
+/** Vérifie le code secret et mémorise le jCodeToken (store + sessionStorage). */
 export const unlockJournal = async (passcode: string): Promise<string> => {
   const payload: UnlockJournalPayload = { passcode };
-  const res = await fetchAPI<UnlockJournalResponse>(`${JOURNAL_URL}/unlock`, {
+  const res = await fetchAPI<UnlockJournalResponse>('/journal/unlock', { method: 'POST', body: payload });
+  if (!res.ok) throw toApiError(res, 'Code secret incorrect.');
+
+  useJournalStore.getState().unlock(res.data.jCodeToken);
+  return res.data.jCodeToken;
+};
+
+export const fetchJournalPosts = async (tab: JournalPostTab, filters: JournalPostFilters = {}): Promise<JournalPost[]> => {
+  const params = new URLSearchParams({ tab });
+  if (filters.tag) params.set('tag', filters.tag);
+  if (filters.q?.trim()) params.set('q', filters.q.trim());
+  return (await request<JournalPost[]>(`${POSTS_URL}?${params}`, 'Impossible de charger le journal.')) ?? [];
+};
+
+export const fetchJournalCounts = (): Promise<JournalCounts> =>
+  request<JournalCounts>(`${POSTS_URL}/counts`, 'Impossible de charger les compteurs du journal.');
+
+/** Crée un post ou une suite (multipart pour les médias). Pour une suite, l'API renvoie le post racine complet. */
+export const createJournalPost = (payload: CreateJournalPostPayload): Promise<JournalPost> =>
+  request<JournalPost>(POSTS_URL, 'Erreur lors de la publication.', {
     method: 'POST',
-    body: payload,
+    body: buildJournalPostFormData(payload),
   });
 
-  if (!res.ok) {
-    throw toApiError(res, 'Code secret incorrect.');
-  }
+/** Modifie un post ; renvoie le post racine complet (suites comprises). */
+export const updateJournalPost = (id: string, payload: UpdateJournalPostPayload): Promise<JournalPost> =>
+  request<JournalPost>(`${POSTS_URL}/${id}`, 'Erreur lors de la modification.', { method: 'PATCH', body: payload });
 
-  const token = res.data.jCodeToken;
-  useJournalStore.getState().unlock(token);
+export const toggleJournalPostFlag = (id: string, flag: 'bookmark' | 'pin' | 'toggle-private'): Promise<JournalPost> =>
+  request<JournalPost>(`${POSTS_URL}/${id}/${flag}`, 'Action impossible sur ce post.', { method: 'POST' });
 
-  return token;
-};
+export const deleteJournalPost = (id: string): Promise<void> =>
+  request<void>(`${POSTS_URL}/${id}`, 'Erreur lors de la suppression du post.', { method: 'DELETE' });
 
-export const fetchEntries = async (): Promise<Entry[]> => {
-  const res = await fetchAPI<Entry[]>(JOURNAL_URL, {
-    headers: getJournalHeaders(),
-  });
-
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Impossible de charger le journal.');
-  }
-
-  return res.data ?? [];
-};
-
-export const fetchEntryById = async (id: string): Promise<Entry> => {
-  const res = await fetchAPI<Entry>(`${JOURNAL_URL}/${id}`, {
-    headers: getJournalHeaders(),
-  });
-
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Entrée introuvable.');
-  }
-
-  return res.data;
-};
-
-export const createEntry = async (payload: CreateEntryPayload): Promise<Entry> => {
-  const res = await fetchAPI<Entry>(JOURNAL_URL, {
-    method: 'POST',
-    body: payload,
-    headers: getJournalHeaders(),
-  });
-
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Erreur lors de la création de l’entrée.');
-  }
-
-  return res.data;
-};
-
-export const updateEntry = async (id: string, payload: UpdateEntryPayload): Promise<Entry> => {
-  const hasFiles =
-    (payload.medias && payload.medias.length > 0) || (payload.deletedMedias && payload.deletedMedias.length > 0);
-
-  let body: FormData | UpdateEntryPayload = payload;
-  let method: 'POST' | 'PATCH' = 'PATCH';
-
-  if (hasFiles) {
-    method = 'POST';
-    const fd = new FormData();
-
-    if (payload.title !== undefined) fd.append('title', payload.title ?? '');
-    if (payload.color !== undefined) fd.append('color', payload.color ?? '');
-    if (payload.mood !== undefined) fd.append('mood', payload.mood ?? '');
-    if (payload.tag !== undefined) fd.append('tag', payload.tag ?? '');
-    if (payload.isPinned !== undefined) fd.append('isPinned', String(payload.isPinned));
-    if (payload.location !== undefined) {
-      fd.append('location', payload.location ? JSON.stringify(payload.location) : '');
-    }
-    if (payload.blocks !== undefined) {
-      fd.append('blocks', JSON.stringify(payload.blocks));
-    }
-
-    payload.deletedMedias?.forEach((mediaId) => {
-      fd.append('deleted_medias[]', mediaId);
-    });
-
-    payload.medias?.forEach((file) => {
-      fd.append('medias[]', file, file.name);
-    });
-
-    body = fd;
-  }
-
-  const res = await fetchAPI<Entry>(`${JOURNAL_URL}/${id}`, {
-    method,
-    body,
-    headers: getJournalHeaders(),
-  });
-
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Erreur lors de la mise à jour de l’entrée.');
-  }
-
-  return res.data;
-};
-
-export const uploadEntryMedia = async (entryId: string, file: File): Promise<EntryMedia> => {
-  const fd = new FormData();
-  fd.append('media', file, file.name);
-
-  const res = await fetchAPI<EntryMedia>(`${JOURNAL_URL}/${entryId}/medias`, {
-    method: 'POST',
-    body: fd,
-    headers: getJournalHeaders(),
-  });
-
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Erreur lors du téléversement du média.');
-  }
-
-  return res.data;
-};
-
-export const deleteEntryMedia = async (entryId: string, mediaId: string): Promise<void> => {
-  const res = await fetchAPI(`${JOURNAL_URL}/${entryId}/medias/${mediaId}`, {
+export const deleteJournalMedia = (postId: string, mediaId: string): Promise<void> =>
+  request<void>(`${POSTS_URL}/${postId}/medias/${mediaId}`, 'Erreur lors de la suppression du média.', {
     method: 'DELETE',
-    headers: getJournalHeaders(),
   });
 
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Erreur lors de la suppression du média.');
-  }
-};
+export const fetchJournalTags = async (): Promise<JournalTag[]> =>
+  (await request<JournalTag[]>(TAGS_URL, 'Impossible de charger les tags du journal.')) ?? [];
 
-export const deleteEntry = async (id: string): Promise<void> => {
-  const res = await fetchAPI(`${JOURNAL_URL}/${id}`, {
-    method: 'DELETE',
-    headers: getJournalHeaders(),
-  });
+export const createJournalTag = (payload: JournalTagPayload): Promise<JournalTag> =>
+  request<JournalTag>(TAGS_URL, 'Erreur lors de la création du tag.', { method: 'POST', body: payload });
 
-  handleUnauthorized(res.status);
-  if (!res.ok) {
-    throw toApiError(res, 'Erreur lors de la suppression de l’entrée.');
-  }
-};
+export const updateJournalTag = (id: string, payload: Partial<JournalTagPayload>): Promise<JournalTag> =>
+  request<JournalTag>(`${TAGS_URL}/${id}`, 'Erreur lors de la modification du tag.', { method: 'PUT', body: payload });
+
+export const deleteJournalTag = (id: string): Promise<void> =>
+  request<void>(`${TAGS_URL}/${id}`, 'Erreur lors de la suppression du tag.', { method: 'DELETE' });

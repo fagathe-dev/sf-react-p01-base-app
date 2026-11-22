@@ -1,12 +1,11 @@
+import { PageHeader } from '@/components/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/auth.store';
-import { Badge } from '@/ui/components';
-import { Icon } from '@/ui/components';
-import { TabContent, TabList, Tabs, TabTrigger } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
-import React from 'react';
-import styled from 'styled-components';
+import { useJournalStore } from '@/stores/journal.store';
+import { Badge, Card, Flex, Icon, TabContent, TabList, Tabs, TabTrigger, Text, Title } from 'core-react/ui';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { styled } from 'styled-components';
 import {
   ChangeAvatarForm,
   ChangeEmailForm,
@@ -14,104 +13,123 @@ import {
   ChangeJournalPasscodeForm,
   ChangePasswordForm,
   DeleteAccountCard,
+  JournalLockCard,
   ProfileSkeleton,
 } from './components';
 
-const PageContainer = styled.div`
+const Content = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-width: 820px;
-  width: 100%;
+  gap: ${({ theme }) => theme.spacing[5]};
+  max-width: 48rem;
 `;
 
-const ProfileBanner = styled.div`
+const Summary = styled(Card.Body)`
   display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  background-color: ${({ theme }) => theme.colors.background.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-radius: ${({ theme }) => theme.radii.base};
   flex-wrap: wrap;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing[5]};
 `;
 
-const TitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+const Name = styled(Title)`
+  margin-bottom: 0;
 `;
 
-const Stack = styled.div`
+const Panel = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: ${({ theme }) => theme.spacing[5]};
+  padding-top: ${({ theme }) => theme.spacing[5]};
 `;
+
+const PROFILE_TABS = ['informations', 'security', 'journal', 'danger'] as const;
+type ProfileTab = (typeof PROFILE_TABS)[number];
 
 export const ProfilePage: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { isAdmin, roleLabel } = useAuth();
+  const loadSecurity = useJournalStore((state) => state.loadSecurity);
+  // Onglet porté par l'URL : /profile?tab=journal (lien depuis le bandeau de l'onglet Privé)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = PROFILE_TABS.includes(searchParams.get('tab') as ProfileTab) ? (searchParams.get('tab') as ProfileTab) : 'informations';
+
+  useEffect(() => {
+    loadSecurity();
+  }, [loadSecurity]);
 
   if (!user) return <ProfileSkeleton />;
 
   const fullName = [user.firstname, user.lastname].filter(Boolean).join(' ');
 
   return (
-    <PageContainer>
-      <Title as="h2">Mon Profil</Title>
+    <>
+      <PageHeader title="Mon profil" description="Vos informations, la sécurité de votre compte et vos préférences." icon="account-outline" />
 
-      <ProfileBanner>
-        <ChangeAvatarForm />
-        <div>
-          <TitleRow>
-            <Title as="h3" style={{ margin: 0 }}>
-              {fullName || user.username}
-            </Title>
-            <Badge variant={isAdmin ? 'primary' : 'neutral'} pill>
-              {roleLabel}
-            </Badge>
-          </TitleRow>
-          <Text size="sm" color="muted">
-            @{user.username} • {user.email}
-          </Text>
-        </div>
-      </ProfileBanner>
+      <Content>
+        <Card>
+          <Summary>
+            <ChangeAvatarForm />
+            <Flex $direction="column" $gap="0.25rem">
+              <Flex $align="center" $gap="0.625rem" $wrap="wrap">
+                <Name as="h2">{fullName || user.username}</Name>
+                <Badge $variant={isAdmin ? 'primary' : 'neutral'} $pill>
+                  {roleLabel}
+                </Badge>
+              </Flex>
+              <Text $size="sm" $color="muted">
+                @{user.username} · {user.email}
+              </Text>
+            </Flex>
+          </Summary>
+        </Card>
 
-      <Tabs defaultValue="informations">
-        <TabList>
-          <TabTrigger value="informations">
-            <Icon name="account-outline" size={16} />
-            <span>Informations</span>
-          </TabTrigger>
+        <Tabs value={tab} onValueChange={(value) => setSearchParams(value === 'informations' ? {} : { tab: value }, { replace: true })}>
+          <TabList>
+            <TabTrigger value="informations">
+              <Icon name="account-outline" size={16} />
+              <span>Informations</span>
+            </TabTrigger>
+            <TabTrigger value="security">
+              <Icon name="shield-lock-outline" size={16} />
+              <span>Sécurité</span>
+            </TabTrigger>
+            <TabTrigger value="journal">
+              <Icon name="book-lock-outline" size={16} />
+              <span>Journal</span>
+            </TabTrigger>
+            <TabTrigger value="danger">
+              <Icon name="alert-octagon-outline" size={16} />
+              <span>Zone de danger</span>
+            </TabTrigger>
+          </TabList>
 
-          <TabTrigger value="security">
-            <Icon name="shield-lock-outline" size={16} />
-            <span>Sécurité & Connexion</span>
-          </TabTrigger>
+          <TabContent value="informations">
+            <Panel>
+              <ChangeInformationsForm />
+            </Panel>
+          </TabContent>
 
-          <TabTrigger value="danger">
-            <Icon name="alert-octagon-outline" size={16} />
-            <span>Danger Zone</span>
-          </TabTrigger>
-        </TabList>
+          <TabContent value="security">
+            <Panel>
+              <ChangeEmailForm />
+              <ChangePasswordForm />
+            </Panel>
+          </TabContent>
 
-        <TabContent value="informations">
-          <ChangeInformationsForm />
-        </TabContent>
+          <TabContent value="journal">
+            <Panel>
+              <JournalLockCard />
+              <ChangeJournalPasscodeForm />
+            </Panel>
+          </TabContent>
 
-        <TabContent value="security">
-          <Stack>
-            <ChangeEmailForm />
-            <ChangePasswordForm />
-            <ChangeJournalPasscodeForm />
-          </Stack>
-        </TabContent>
-
-        <TabContent value="danger">
-          <DeleteAccountCard />
-        </TabContent>
-      </Tabs>
-    </PageContainer>
+          <TabContent value="danger">
+            <Panel>
+              <DeleteAccountCard />
+            </Panel>
+          </TabContent>
+        </Tabs>
+      </Content>
+    </>
   );
 };

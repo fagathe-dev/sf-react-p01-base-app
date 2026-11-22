@@ -1,1 +1,2 @@
-export * from './TagsPage';
+export * from './TagManager';
+export * from './components';
