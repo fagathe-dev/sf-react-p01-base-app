@@ -2,6 +2,7 @@ import { JOURNAL_TOKEN_KEY, useJournalStore } from '@/stores/journal.store';
 import {
   CreateEntryPayload,
   Entry,
+  EntryMedia,
   UnlockJournalPayload,
   UnlockJournalResponse,
   UpdateEntryPayload,
@@ -99,13 +100,15 @@ export const updateEntry = async (id: string, payload: UpdateEntryPayload): Prom
     const fd = new FormData();
 
     if (payload.title !== undefined) fd.append('title', payload.title ?? '');
-    if (payload.content !== undefined) fd.append('content', payload.content ?? '');
     if (payload.color !== undefined) fd.append('color', payload.color ?? '');
     if (payload.mood !== undefined) fd.append('mood', payload.mood ?? '');
     if (payload.tag !== undefined) fd.append('tag', payload.tag ?? '');
     if (payload.isPinned !== undefined) fd.append('isPinned', String(payload.isPinned));
     if (payload.location !== undefined) {
       fd.append('location', payload.location ? JSON.stringify(payload.location) : '');
+    }
+    if (payload.blocks !== undefined) {
+      fd.append('blocks', JSON.stringify(payload.blocks));
     }
 
     payload.deletedMedias?.forEach((mediaId) => {
@@ -131,6 +134,36 @@ export const updateEntry = async (id: string, payload: UpdateEntryPayload): Prom
   }
 
   return res.data;
+};
+
+export const uploadEntryMedia = async (entryId: string, file: File): Promise<EntryMedia> => {
+  const fd = new FormData();
+  fd.append('media', file, file.name);
+
+  const res = await fetchAPI<EntryMedia>(`${JOURNAL_URL}/${entryId}/medias`, {
+    method: 'POST',
+    body: fd,
+    headers: getJournalHeaders(),
+  });
+
+  handleUnauthorized(res.status);
+  if (!res.ok) {
+    throw toApiError(res, 'Erreur lors du téléversement du média.');
+  }
+
+  return res.data;
+};
+
+export const deleteEntryMedia = async (entryId: string, mediaId: string): Promise<void> => {
+  const res = await fetchAPI(`${JOURNAL_URL}/${entryId}/medias/${mediaId}`, {
+    method: 'DELETE',
+    headers: getJournalHeaders(),
+  });
+
+  handleUnauthorized(res.status);
+  if (!res.ok) {
+    throw toApiError(res, 'Erreur lors de la suppression du média.');
+  }
 };
 
 export const deleteEntry = async (id: string): Promise<void> => {

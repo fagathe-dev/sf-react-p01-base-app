@@ -24,6 +24,8 @@ import {
   Label as CoreLabel,
   ListGroup as CoreListGroup,
   ListGroupItem as CoreListGroupItem,
+  MarkdownEditor as CoreMarkdownEditor,
+  type MarkdownEditorProps,
   NavbarLink as CoreNavbarLink,
   Row as CoreRow,
   Skeleton as CoreSkeleton,
@@ -34,8 +36,27 @@ import {
   Title as CoreTitle,
   TRow as CoreTRow,
 } from 'core-react/ui';
+import React from 'react';
+import styled from 'styled-components';
 
 export * from 'core-react/ui';
+
+const TransparentMarkdownShell = styled.div`
+  & > div {
+    margin-bottom: 0;
+  }
+
+  /* Conteneur principal, barre d'outils, sélecteur Écrire/Aperçu, zone de saisie et aperçu transparents */
+  & div:has(> div > [role='radiogroup']),
+  & div:has(> [role='radiogroup']),
+  & [role='radiogroup'],
+  & textarea {
+    background-color: transparent !important;
+  }
+`;
+
+export const MarkdownEditor: React.FC<MarkdownEditorProps> = (props) =>
+  React.createElement(TransparentMarkdownShell, null, React.createElement(CoreMarkdownEditor, props));
 
 export const Badge = withLegacyProps(CoreBadge, { variant: '$variant', pill: '$pill', color: '$color' });
 export const Button = withLegacyProps(CoreButton, { variant: '$variant', size: '$size', fullWidth: '$fullWidth', loading: '$loading' });

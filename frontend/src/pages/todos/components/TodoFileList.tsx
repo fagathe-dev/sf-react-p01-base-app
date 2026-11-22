@@ -1,5 +1,6 @@
 import { deleteTodoFile } from '@/services/todo.api';
 import { TodoFile } from '@/types/todo.types';
+import { getFileIcon } from '@/utils';
 import { Icon } from '@/ui/components';
 import { Text } from '@/ui/components';
 import React, { useRef } from 'react';
@@ -68,7 +69,7 @@ export const TodoFileList: React.FC<{
               overflow: 'hidden',
             }}
           >
-            <Icon name="file-outline" size={16} />
+            <Icon name={getFileIcon(file)} size={16} title={file.type ?? undefined} />
             <Text size="xs">{file.originalName}</Text>
           </div>
           <button

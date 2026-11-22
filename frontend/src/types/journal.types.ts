@@ -35,6 +35,26 @@ export const MOOD_META: Record<MoodEnum, { emoji: string; label: string }> = {
   stressed: { emoji: '😰', label: 'Stressé' },
 };
 
+export type JournalBlockType = 'text' | 'image' | 'video' | 'gallery' | 'quote';
+
+export interface EntryBlock {
+  id: string;
+  type: JournalBlockType;
+  position: number;
+  data: Record<string, unknown>;
+  settings?: Record<string, unknown> | null;
+  createdAt?: string;
+  updatedAt?: string | null;
+}
+
+export interface SaveEntryBlockPayload {
+  id?: string | null;
+  type: JournalBlockType;
+  position: number;
+  data: Record<string, unknown>;
+  settings?: Record<string, unknown> | null;
+}
+
 export interface EntryLocation {
   id?: string;
   name: string;
@@ -62,7 +82,8 @@ export interface EntryMedia {
 export interface Entry {
   id: string;
   title: string | null;
-  content: string | null;
+  content?: string | null;
+  blocks?: EntryBlock[];
   slug?: string | null;
   color?: ColorEnum | null;
   mood?: MoodEnum | null;
@@ -76,7 +97,7 @@ export interface Entry {
 
 export interface CreateEntryPayload {
   title?: string | null;
-  content?: string | null;
+  blocks?: SaveEntryBlockPayload[];
   color?: ColorEnum | null;
   mood?: MoodEnum | null;
   isPinned?: boolean;

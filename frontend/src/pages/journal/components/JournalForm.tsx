@@ -1,43 +1,95 @@
 import { getErrorMessage } from '@/services/apiError';
+import { createEntry, uploadEntryMedia } from '@/services/journal.api';
 import { fetchTags } from '@/services/tag.api';
-import { Entry, EntryLocation, EntryMedia, MOOD_META, MoodEnum, UpdateEntryPayload } from '@/types/journal.types';
+import {
+  Entry,
+  EntryBlock,
+  EntryLocation,
+  EntryMedia,
+  MOOD_META,
+  MoodEnum,
+  UpdateEntryPayload,
+} from '@/types/journal.types';
 import { ColorEnum, Tag } from '@/types/tag.types';
-import { Button } from '@/ui/components';
-import { Icon } from '@/ui/components';
-import { Alert } from '@/ui/components';
-import { MarkdownEditor } from '@/ui/components';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Button, EmptyState, Icon } from '@/ui/components';
+import { BlockCanvas, BlockList, type MediaUploadHandler, useBlocksState } from 'core-react/editor';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { JOURNAL_BLOCK_REGISTRY } from './JournalBlockRegistry';
 import { JournalColorPicker } from './JournalColorPicker';
 import * as S from './JournalForm.styles';
 import { JournalLocationTrigger } from './JournalLocationTrigger';
 import { JournalMediaManager, validateMediaFiles } from './JournalMediaManager';
 import { JournalMoodModal } from './JournalMoodModal';
+import { JournalViewMode } from './JournalPageHeader';
 import { JournalTagPicker } from './JournalTagPicker';
 
 interface JournalFormProps {
   initialEntry?: Entry | null;
   isEdit?: boolean;
-  onSubmit: (payload: UpdateEntryPayload) => Promise<void>;
+  mode?: JournalViewMode;
+  onSubmit: (payload: UpdateEntryPayload, autoCreatedEntryId?: string | null) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
 
+const buildInitialBlocks = (entry?: Entry | null, isEdit?: boolean): EntryBlock[] => {
+  if (entry?.blocks && entry.blocks.length > 0) {
+    return entry.blocks;
+  }
+  if (entry?.content && entry.content.trim() !== '') {
+    return [
+      {
+        id: '',
+        type: 'text',
+        position: 1,
+        data: { content: entry.content },
+      },
+    ];
+  }
+  if (!isEdit) {
+    return [
+      {
+        id: '',
+        type: 'text',
+        position: 1,
+        data: { content: '' },
+      },
+    ];
+  }
+  return [];
+};
+
 export const JournalForm: React.FC<JournalFormProps> = ({
   initialEntry,
   isEdit = false,
+  mode = 'edit',
   onSubmit,
   onCancel,
   loading,
 }) => {
   const [title, setTitle] = useState(initialEntry?.title || '');
-  const [content, setContent] = useState(initialEntry?.content || '');
   const [mood, setMood] = useState<MoodEnum | null>(initialEntry?.mood || null);
   const [color, setColor] = useState<ColorEnum | null>(initialEntry?.color || null);
   const [tagId, setTagId] = useState<string | null>(initialEntry?.tag?.id || null);
   const [location, setLocation] = useState<EntryLocation | null>(initialEntry?.location || null);
   const [isPinned, setIsPinned] = useState(Boolean(initialEntry?.is_pinned));
 
-  // États dédiés aux médias (uniquement en mode modification)
+  // Identifiant de l'entrée (existant ou créé à la volée lors d'un upload de média dans un bloc)
+  const entryIdRef = useRef<string | null>(initialEntry?.id ?? null);
+
+  const initialBlocks = useMemo(() => buildInitialBlocks(initialEntry, isEdit), [initialEntry, isEdit]);
+
+  const {
+    blocks,
+    addBlock,
+    updateBlock,
+    moveBlock,
+    reorderBlocks,
+    removeBlock,
+    toPayload,
+  } = useBlocksState(JOURNAL_BLOCK_REGISTRY, initialBlocks);
+
+  // États dédiés aux pièces jointes additionnelles
   const [existingMedias, setExistingMedias] = useState<EntryMedia[]>(initialEntry?.entryMedia || []);
   const [deletedMedias, setDeletedMedias] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -66,49 +118,86 @@ export const JournalForm: React.FC<JournalFormProps> = ({
     }
   }, []);
 
-  // Collage de médias dans l'éditeur en mode modification (l'événement remonte du textarea de MarkdownEditor)
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (!isEdit || !e.clipboardData?.files?.length) return;
-    const files = Array.from(e.clipboardData.files);
-    const hasMedia = files.some((f) => ['image/', 'video/', 'audio/'].some((t) => f.type.startsWith(t)));
-    if (hasMedia) {
-      e.preventDefault();
-      handleAddFiles(files);
-    }
-  };
+  /**
+   * Téléversement de média déclenché par les blocs Image, Vidéo ou Galerie de BlockCanvas.
+   * Si l'entrée est en cours de création (/journal/new) et n'a pas encore d'ID en base,
+   * elle est créée à la volée afin de rattacher le média à son ID.
+   */
+  const handleBlockUpload = useCallback<MediaUploadHandler>(
+    async (file: File) => {
+      let targetId = entryIdRef.current;
 
-  // Glisser-déposer de médias sur l'éditeur en mode modification (sans bandeau dédié)
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isEdit || !e.dataTransfer?.files?.length) return;
-    e.preventDefault();
-    handleAddFiles(Array.from(e.dataTransfer.files));
-  };
+      if (!targetId) {
+        const created = await createEntry({
+          title: title.trim() || 'Entrée sans titre',
+          mood,
+          color,
+          tag: tagId,
+          location,
+          isPinned,
+          blocks: toPayload(),
+        });
+        targetId = created.id;
+        entryIdRef.current = created.id;
+      }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+      const uploadedMedia = await uploadEntryMedia(targetId, file);
+      setExistingMedias((prev) => [uploadedMedia, ...prev]);
+
+      return uploadedMedia.filePath;
+    },
+    [title, mood, color, tagId, location, isPinned, toPayload],
+  );
+
+  const submitForm = useCallback(async () => {
     setSubmitError(null);
+    const blocksPayload = toPayload();
+
     try {
-      await onSubmit({
-        title: title.trim() || null,
-        content: content.trim() || null,
-        mood,
-        color,
-        tag: tagId,
-        location,
-        isPinned,
-        ...(isEdit ? { medias: pendingFiles, deletedMedias } : {}),
-      });
+      await onSubmit(
+        {
+          title: title.trim() || null,
+          blocks: blocksPayload,
+          mood,
+          color,
+          tag: tagId,
+          location,
+          isPinned,
+          ...(isEdit || entryIdRef.current ? { medias: pendingFiles, deletedMedias } : {}),
+        },
+        entryIdRef.current,
+      );
     } catch (err) {
       setSubmitError(getErrorMessage(err, 'Erreur lors de l’enregistrement de l’entrée.'));
     }
+  }, [toPayload, onSubmit, title, mood, color, tagId, location, isPinned, isEdit, pendingFiles, deletedMedias]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitForm();
   };
 
+  // Raccourci clavier Ctrl+S / Cmd+S
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        if (!loading) {
+          void submitForm();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [loading, submitForm]);
+
   const currentMoodMeta = mood ? MOOD_META[mood] : null;
+  const previewBlocks = useMemo(() => toPayload(), [toPayload]);
 
   return (
     <S.FormRoot $color={color} onSubmit={handleSubmit} onClick={() => setActivePicker(null)}>
       <S.TopBar>
-        <S.TitleField placeholder="Titre (optionnel)" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <S.TitleField placeholder="Titre de la page…" value={title} onChange={(e) => setTitle(e.target.value)} />
         <button
           type="button"
           onClick={() => setIsPinned(!isPinned)}
@@ -124,18 +213,39 @@ export const JournalForm: React.FC<JournalFormProps> = ({
         </button>
       </S.TopBar>
 
-      {/* Éditeur Markdown de core-react : barre d'outils, raccourcis et onglets Écrire / Aperçu */}
-      <S.EditorArea onPaste={handlePaste} onDrop={handleDrop}>
-        <MarkdownEditor
-          aria-label="Contenu de l'entrée"
-          placeholder="Rédige tes pensées en Markdown…"
-          value={content}
-          onChange={setContent}
-          rows={12}
-        />
-      </S.EditorArea>
+      {mode === 'preview' ? (
+        <S.PreviewArea>
+          {previewBlocks.length === 0 ? (
+            <EmptyState
+              icon="text-box-outline"
+              title="Aucun contenu"
+              description="Cette page ne contient encore aucun bloc."
+            />
+          ) : (
+            <BlockList registry={JOURNAL_BLOCK_REGISTRY} blocks={previewBlocks} />
+          )}
+        </S.PreviewArea>
+      ) : (
+        <S.EditorArea>
+          <BlockCanvas
+            registry={JOURNAL_BLOCK_REGISTRY}
+            blocks={blocks}
+            onAdd={addBlock}
+            onChange={updateBlock}
+            onMove={moveBlock}
+            onReorder={reorderBlocks}
+            onRemove={removeBlock}
+            onUpload={handleBlockUpload}
+            labels={{
+              emptyTitle: 'Cette page ne contient encore aucun bloc',
+              emptyDescription:
+                "Ajoutez un premier bloc de texte, d'image, de vidéo, de galerie ou de citation ci-dessous.",
+            }}
+          />
+        </S.EditorArea>
+      )}
 
-      {isEdit && (
+      {isEdit && (existingMedias.length > 0 || pendingFiles.length > 0) && (
         <>
           <input
             ref={fileInputRef}
@@ -201,17 +311,6 @@ export const JournalForm: React.FC<JournalFormProps> = ({
             onToggle={() => setActivePicker((p) => (p === 'palette' ? null : 'palette'))}
             onClose={() => setActivePicker(null)}
           />
-
-          {/* Bouton Média affiché uniquement en mode modification */}
-          {isEdit && (
-            <S.ToolSquareBtn
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Ajouter une image, vidéo ou audio"
-            >
-              <Icon name="image-outline" size={18} />
-            </S.ToolSquareBtn>
-          )}
         </S.ToolGroup>
 
         <S.ToolGroup>

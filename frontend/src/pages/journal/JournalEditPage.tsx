@@ -1,11 +1,16 @@
 import { useJournalAutoLock } from '@/hooks/useJournalAutoLock';
-import { fetchEntryById, updateEntry } from '@/services/journal.api';
+import { deleteEntry, fetchEntryById, updateEntry } from '@/services/journal.api';
 import { useJournalStore } from '@/stores/journal.store';
-import { CreateEntryPayload, Entry } from '@/types/journal.types';
-import { Breadcrumb } from '@/ui/components';
+import { Entry, UpdateEntryPayload } from '@/types/journal.types';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { JournalForm, JournalFormSkeleton, JournalLockScreen } from './components';
+import {
+  JournalForm,
+  JournalFormSkeleton,
+  JournalLockScreen,
+  JournalPageHeader,
+  JournalViewMode,
+} from './components';
 
 export const JournalEditPage: React.FC = () => {
   const isUnlocked = useJournalStore((state) => state.isUnlocked);
@@ -16,7 +21,6 @@ export const JournalEditPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
-  // Ouvert depuis la liste : « Annuler » y ramène directement
   const from = (useLocation().state as { from?: string } | null)?.from;
 
   useEffect(() => {
@@ -27,14 +31,26 @@ export const JournalEditPage: React.FC = () => {
     }
   }, [journalId, isUnlocked]);
 
-  const handleUpdate = async (payload: CreateEntryPayload) => {
+  const handleUpdate = async (payload: UpdateEntryPayload) => {
     if (!journalId) return;
     try {
       setSaving(true);
-      await updateEntry(journalId, payload);
-      console.log({payload})
+      const updated = await updateEntry(journalId, payload);
+      setEntry(updated);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!journalId || !window.confirm('Supprimer définitivement cette entrée ?')) return;
+    await deleteEntry(journalId);
+    navigate('/journal');
+  };
+
+  const handleModeChange = (nextMode: JournalViewMode) => {
+    if (nextMode === 'preview' && journalId) {
+      navigate(`/journal/${journalId}`);
     }
   };
 
@@ -47,16 +63,18 @@ export const JournalEditPage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Breadcrumb
-        items={[
-          { label: 'Mon Journal', to: '/journal', icon: 'notebook-outline' },
-          { label: entry.title || 'Entrée sans titre', to: `/journal/${entry.id}` },
-          { label: 'Modifier', active: true },
-        ]}
+      <JournalPageHeader
+        entryTitle={entry.title}
+        entryUrl={`/journal/${entry.id}`}
+        mode="edit"
+        onModeChange={handleModeChange}
+        onDelete={handleDelete}
       />
       <JournalForm
+        key={entry.id}
         isEdit
         initialEntry={entry}
+        mode="edit"
         onSubmit={handleUpdate}
         onCancel={() => navigate(from ?? `/journal/${journalId}`)}
         loading={saving}

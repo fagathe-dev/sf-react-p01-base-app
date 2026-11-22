@@ -1,4 +1,5 @@
 export * from './dueDate.resolver';
+export * from './fileIcon';
 export * from './jwt';
 export * from './role';
 export * from './secret';

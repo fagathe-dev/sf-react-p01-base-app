@@ -2,16 +2,19 @@ import { useJournalAutoLock } from '@/hooks/useJournalAutoLock';
 import { deleteEntry, fetchEntryById } from '@/services/journal.api';
 import { useJournalStore } from '@/stores/journal.store';
 import { Entry, EntryMedia, MOOD_META } from '@/types/journal.types';
-import { Button } from '@/ui/components';
-import { Icon } from '@/ui/components';
-import { Breadcrumb } from '@/ui/components';
-import { Text } from '@/ui/components';
-import { Title } from '@/ui/components';
-import { convertMarkdownToHtml } from 'core-ts';
+import { tagColors } from '@/types/tag.types';
+import { Badge, Card, Divider, EmptyState, Icon, MarkdownViewer, Text, Title } from '@/ui/components';
+import { BlockList } from 'core-react/editor';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { JournalEntrySkeleton, JournalLockScreen } from './components';
+import {
+  JOURNAL_BLOCK_REGISTRY,
+  JournalEntrySkeleton,
+  JournalLockScreen,
+  JournalPageHeader,
+  JournalViewMode,
+} from './components';
 
 const PageWrap = styled.article`
   display: flex;
@@ -21,19 +24,18 @@ const PageWrap = styled.article`
   width: 100%;
 `;
 
-const TopBar = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+const ArticleBody = styled.div`
+  max-width: 820px;
+  margin: 0 auto;
+  width: 100%;
 `;
 
 const MetaRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: 10px 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.border.default};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.default};
   font-size: 13px;
   color: ${({ theme }) => theme.colors.text.muted};
 `;
@@ -42,6 +44,7 @@ const MediaGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+  margin-top: 16px;
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
@@ -90,12 +93,21 @@ export const JournalDetailsPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [journalId, isUnlocked]);
 
-  const html = useMemo(() => (entry?.content ? convertMarkdownToHtml(entry.content) : ''), [entry?.content]);
+  const sortedBlocks = useMemo(
+    () => [...(entry?.blocks ?? [])].sort((a, b) => a.position - b.position),
+    [entry?.blocks],
+  );
 
   const handleDelete = async () => {
     if (!journalId || !window.confirm('Supprimer définitivement cette entrée ?')) return;
     await deleteEntry(journalId);
     navigate('/journal');
+  };
+
+  const handleModeChange = (nextMode: JournalViewMode) => {
+    if (nextMode === 'edit' && entry) {
+      navigate(`/journal/${entry.id}/edit`);
+    }
   };
 
   if (!isUnlocked) return <JournalLockScreen />;
@@ -104,6 +116,18 @@ export const JournalDetailsPage: React.FC = () => {
 
   const moodMeta = entry.mood ? MOOD_META[entry.mood] : null;
   const medias = entry.entryMedia || [];
+
+  // N'affiche dans la grille de bas de page que les médias qui ne sont pas déjà référencés dans un bloc
+  const blockUrls = new Set<string>();
+  sortedBlocks.forEach((b) => {
+    if (typeof b.data?.url === 'string' && b.data.url) blockUrls.add(b.data.url);
+    if (Array.isArray(b.data?.images)) {
+      b.data.images.forEach((img: { url?: string }) => {
+        if (img?.url) blockUrls.add(img.url);
+      });
+    }
+  });
+  const orphanMedias = medias.filter((m) => !blockUrls.has(m.filePath));
 
   const renderMedia = (m: EntryMedia) => {
     if (m.mimeType.startsWith('image/')) {
@@ -117,62 +141,79 @@ export const JournalDetailsPage: React.FC = () => {
 
   return (
     <PageWrap>
-      <Breadcrumb
-        items={[
-          { label: 'Mon Journal', to: '/journal', icon: 'notebook-outline' },
-          { label: entry.title || 'Entrée sans titre', active: true },
-        ]}
+      <JournalPageHeader
+        entryTitle={entry.title}
+        entryUrl={`/journal/${entry.id}`}
+        mode="preview"
+        onModeChange={handleModeChange}
+        onDelete={handleDelete}
       />
-      <TopBar>
-        <div>
-          <Text size="xs" color="muted" weight="semibold" style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
-            {new Date(entry.created_at).toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </Text>
-          <Title as="h2" style={{ marginTop: 4 }}>
-            {entry.title || 'Entrée sans titre'}
-          </Title>
-        </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button variant="outline" onClick={() => navigate(`/journal/${entry.id}/edit`)} title="Modifier">
-            <Icon name="pencil" size={16} />
-          </Button>
-          <Button variant="ghost" style={{ color: '#e7000b' }} onClick={handleDelete} title="Supprimer">
-            <Icon name="trash-can-outline" size={16} />
-          </Button>
-        </div>
-      </TopBar>
+      <Card elevation="sm">
+        <Card.Body>
+          <ArticleBody>
+            <MetaRow>
+              <Text size="xs" color="muted" weight="semibold" style={{ textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                {new Date(entry.created_at).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </Text>
 
-      {(moodMeta || entry.location || entry.tag) && (
-        <MetaRow>
-          {moodMeta && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16 }}>{moodMeta.emoji}</span>
-              <span>{moodMeta.label}</span>
-            </span>
-          )}
-          {entry.location && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Icon name="map-marker-outline" size={15} />
-              <span>{entry.location.name}</span>
-            </span>
-          )}
-        </MetaRow>
-      )}
-      
-      {html && <div dangerouslySetInnerHTML={{ __html: html }} style={{ fontSize: 15, lineHeight: 1.6 }} />}
+              {moodMeta && (
+                <Badge variant="neutral" pill>
+                  <span style={{ fontSize: 14, marginRight: 4 }}>{moodMeta.emoji}</span>
+                  {moodMeta.label}
+                </Badge>
+              )}
 
-      {medias.length > 0 && (
-        <MediaGrid>
-          {medias.map((m) => (
-            <MediaBox key={m.id}>{renderMedia(m)}</MediaBox>
-          ))}
-        </MediaGrid>
-      )}
+              {entry.tag && (
+                <Badge
+                  variant="neutral"
+                  pill
+                  color={entry.tag.color ? tagColors[entry.tag.color] : undefined}
+                >
+                  #{entry.tag.name}
+                </Badge>
+              )}
+
+              {entry.location && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="map-marker-outline" size={15} />
+                  <span>{entry.location.name}</span>
+                </span>
+              )}
+            </MetaRow>
+
+            <Title as="h1" style={{ marginTop: 8 }}>
+              {entry.title || 'Entrée sans titre'}
+            </Title>
+
+            <Divider margin="1.25rem 0" />
+
+            {sortedBlocks.length > 0 ? (
+              <BlockList registry={JOURNAL_BLOCK_REGISTRY} blocks={sortedBlocks} />
+            ) : entry.content ? (
+              <MarkdownViewer breaks>{entry.content}</MarkdownViewer>
+            ) : (
+              <EmptyState
+                icon="text-box-outline"
+                title="Aucun contenu"
+                description="Cette entrée ne contient encore aucun bloc."
+              />
+            )}
+
+            {orphanMedias.length > 0 && (
+              <MediaGrid>
+                {orphanMedias.map((m) => (
+                  <MediaBox key={m.id}>{renderMedia(m)}</MediaBox>
+                ))}
+              </MediaGrid>
+            )}
+          </ArticleBody>
+        </Card.Body>
+      </Card>
     </PageWrap>
   );
 };

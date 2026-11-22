@@ -1,3 +1,4 @@
+export * from './JournalBlockRegistry';
 export * from './JournalCard';
 export * from './JournalEntrySkeleton';
 export * from './JournalForm';
@@ -6,3 +7,4 @@ export * from './JournalListSkeleton';
 export * from './JournalLocationTrigger';
 export * from './JournalLockScreen';
 export * from './JournalMoodModal';
+export * from './JournalPageHeader';

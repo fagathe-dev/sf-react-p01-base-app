@@ -1,24 +1,26 @@
 import { useJournalAutoLock } from '@/hooks/useJournalAutoLock';
-import { createEntry } from '@/services/journal.api';
+import { createEntry, updateEntry } from '@/services/journal.api';
 import { useJournalStore } from '@/stores/journal.store';
-import { CreateEntryPayload } from '@/types/journal.types';
+import { UpdateEntryPayload } from '@/types/journal.types';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { JournalForm, JournalLockScreen } from './components';
-import { Breadcrumb } from '@/ui/components';
+import { JournalForm, JournalLockScreen, JournalPageHeader, JournalViewMode } from './components';
 
 export const JournalCreatePage: React.FC = () => {
   const isUnlocked = useJournalStore((state) => state.isUnlocked);
   useJournalAutoLock();
 
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<JournalViewMode>('edit');
   const navigate = useNavigate();
 
-  const handleCreate = async (payload: CreateEntryPayload) => {
+  const handleCreate = async (payload: UpdateEntryPayload, autoCreatedEntryId?: string | null) => {
     try {
       setLoading(true);
-      await createEntry(payload);
-      navigate('/journal');
+      const saved = autoCreatedEntryId
+        ? await updateEntry(autoCreatedEntryId, payload)
+        : await createEntry(payload);
+      navigate(`/journal/${saved.id}`);
     } finally {
       setLoading(false);
     }
@@ -30,13 +32,13 @@ export const JournalCreatePage: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Breadcrumb
-        items={[
-          { label: 'Mon Journal', to: '/journal', icon: 'notebook-outline' },
-          { label: 'Nouvelle entrée', active: true },
-        ]}
+      <JournalPageHeader isCreate mode={mode} onModeChange={setMode} />
+      <JournalForm
+        mode={mode}
+        onSubmit={handleCreate}
+        onCancel={() => navigate('/journal')}
+        loading={loading}
       />
-      <JournalForm onSubmit={handleCreate} onCancel={() => navigate('/journal')} loading={loading} />
     </div>
   );
 };
